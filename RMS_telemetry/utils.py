@@ -8,7 +8,7 @@ from typing import Optional, Union
 
 
 __all__ = ['get_archive_dir', 'get_capture_dir', 'datetime_to_iso',
-           'timestamp_to_iso', 'now_as_iso', 'timestamp_to_rfc2822',
+           'timestamp_to_iso', 'now_as_iso', 'iso_age', 'timestamp_to_rfc2822',
            'timed_lru_cache']
 
 
@@ -39,6 +39,23 @@ def now_as_iso() -> str:
     """
     
     return timestamp_to_iso(time.time())
+
+
+def iso_age(iso: str) -> float:
+    """
+    Given a ISO8601 time, figure out how old the timestamp is and return that
+    value in seconds.
+    
+    .. note:: Negative age = time is in the future
+    """
+    
+    now = datetime.utcnow()
+    try:
+        dt = datetime.strptime(iso, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        dt = datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S.%sZ")
+    age = now - dt
+    return age.total_seconds()
 
 
 def timestamp_to_rfc2822(ts: Union[int,float]) -> str:
