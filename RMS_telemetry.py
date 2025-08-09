@@ -41,16 +41,9 @@ if __name__ == "__main__":
     server = TelemetryServer(args.ip, args.port, args.log_dir)
     data = server.get_data()
     
-    # Load in the disk info
+    # Load in the disk info - but not really
     tDisk = 0.0
-    try:
-        new_data = get_disk_info(args.log_dir)
-        tDisk = time.time()
-        data['disk'] = new_data
-        
-    except Exception as e:
-        print(f"WARNING: failed to parse the most disk usage info: {str(e)}")
-        
+    
     # Load in the old logs
     t0 = time.time()
     lognames = glob.glob(os.path.join(args.log_dir, 'log_*.log'))
@@ -125,11 +118,11 @@ if __name__ == "__main__":
                 print(f"WARNING: failed to parse the most recent log: {str(e)}")
                 
             t1  = time.time()
-            tSleep = 120 - (t1 - t0)
+            tSleep = 60 - (t1 - t0)
             while tSleep > 1:
                 time.sleep(1)
                 t1  = time.time()
-                tSleep = 120 - (t1 - t0)
+                tSleep = 60 - (t1 - t0)
                 
     except KeyboardInterrupt:
         print("Stopping server..")
