@@ -107,6 +107,7 @@ if __name__ == "__main__":
                     try:
                         new_data = get_disk_info(args.log_dir)
                         data['disk'] = new_data
+                        tDisk = t0
                     except Exception as e:
                         print(f"WARNING: failed to parse the most disk usage info: {str(e)}")
                         
