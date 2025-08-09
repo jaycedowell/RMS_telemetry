@@ -72,7 +72,7 @@ def get_system_info(log_dir: str) -> Dict[str,Any]:
     
     # Hostname
     with open('/etc/hostname', 'r') as fh:
-        data['hostname'] = fh.read()
+        data['hostname'] = fh.read().strip()
         
     # Uptime
     with open('/proc/uptime', 'r') as fh:
