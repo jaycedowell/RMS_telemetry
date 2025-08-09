@@ -11,7 +11,7 @@ from urllib.parse import unquote_plus
 from .images import get_radiants, get_image, get_image_data
 from .utils import timestamp_to_iso
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 
 __all__ = ['TelemetryServer', 'TelemetryHandler']
@@ -91,6 +91,18 @@ class TelemetryServer(ThreadingHTTPServer):
         
         return self._data
         
+    def get_previous_dates(self) -> List[str]:
+        """
+        Return a list of YYYYMMDD dates in the history.
+        """
+        
+        dates = []
+        for entry in self._previous_data:
+            date, _ = entry['capture']['started'].split('T', 1)
+            dates.append(date.replace('-', ''))
+            
+        return dates
+        
     def get_previous_data(self, date: Optional[str]=None) -> Optional[Dict[str,Any]]:
         """
         Return an entry from the history.  If `date` is not provided then the
@@ -104,7 +116,7 @@ class TelemetryServer(ThreadingHTTPServer):
                 return self._previous_data[-1]
             else:
                 for entry in self._previous_data:
-                    if entry['capture']['started'].replace('/', '').startswith(date):
+                    if entry['capture']['started'].replace('-', '').startswith(date):
                         return entry
         return None
         
@@ -151,7 +163,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             self.handle_request(m.group(1))
         else:
             self.send_response(500)
-            self.wfile.write('Internal Error - parsing request')
+            self.wfile.write(bytes('Internal Error - parsing request', 'utf-8'))
             
     def handle_request(self, req: str):
         params = {}
@@ -240,6 +252,14 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
 
             self.wfile.write(bytes('URL not found', 'utf-8'))
         self.wfile.flush()
+        
+    @HandlerRegistry.register('/previous/dates')
+    def get_previous_dates(self, params: Dict[str,Any]):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+
+        self.wfile.write(bytes(json.dumps(self.server.get_previous_dates()), "utf-8"))
         
     @HandlerRegistry.register('/previous/radiants')
     def get_previous_radiants(self, params: Dict[str,Any]):
