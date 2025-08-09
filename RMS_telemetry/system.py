@@ -70,6 +70,10 @@ def get_memory_info(log_dir: str) -> Dict[str,Any]:
 def get_system_info(log_dir: str) -> Dict[str,Any]:
     data = {}
     
+    # Hostname
+    with open('/etc/hostname', 'r') as fh:
+        data['hostname'] = fh.read()
+        
     # Uptime
     with open('/proc/uptime', 'r') as fh:
         fields = fh.read().split(None)
