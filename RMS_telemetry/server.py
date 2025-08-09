@@ -11,6 +11,7 @@ from urllib.parse import unquote_plus
 
 from .images import get_radiants, get_image, get_image_data
 from .utils import timestamp_to_iso, get_archive_dir
+from .system import *
 
 from typing import Optional, Dict, Any, List
 
@@ -222,6 +223,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
 <h4>Current</h4>
 <a href="/latest">Status</a><br />
 <a href="/latest/image">Latest Image (only active when capturing)</a></br>
+<a href="/system">System status</a><br />
 
 <h4>Last Completed Run</h4>
 <a href="/previous">Status</a><br />
@@ -264,6 +266,20 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
             self.wfile.write(bytes('Capture is not active', 'utf-8'))
+        self.wfile.flush()
+        
+    @HandlerRegistry.register('/system')
+    def get_latest_system(self, params: Dict[str,Any]):
+        data = {}
+        data['system'] = get_system_info(self.server.log_dir)
+        data['memory'] = get_memory_info(self.server.log_dir)
+        data['disk'] = get_disk_info(self.server.log_dir)
+        
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+
+        self.wfile.write(bytes(json.dumps(data), "utf-8"))
         self.wfile.flush()
         
     @HandlerRegistry.register('/previous')

@@ -12,6 +12,7 @@ import argparse
 from RMS_telemetry.server import TelemetryServer
 from RMS_telemetry.log import parse_log_line
 from RMS_telemetry.utils import *
+from RMS_telemetry.system import *
 
 from typing import Dict, Any, Optional
 
@@ -21,7 +22,7 @@ if __name__ == "__main__":
         description='run a simple telemetry server to monitor the logs on a RMS', 
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
-    parser.add_argument('--ip', type=str, default='127.0.0.1',
+    parser.add_argument('--ip', type=str, default='0.0.0.0',
                         help='IP address to bind to')
     parser.add_argument('--port', type=int, default=5000,
                         help='port to bind to')
@@ -45,15 +46,8 @@ if __name__ == "__main__":
     try:
         new_data = get_disk_info(args.log_dir)
         tDisk = time.time()
-        for key in new_data.keys():
-            value = new_data[key]
-            if isinstance(value, dict):
-                try:
-                    data[key].update(value)
-                except KeyError:
-                    data[key] = value
-            else:
-                data[key] = value
+        data['disk'] = new_data
+        
     except Exception as e:
         print(f"WARNING: failed to parse the most disk usage info: {str(e)}")
         
@@ -118,7 +112,8 @@ if __name__ == "__main__":
                     
                 if t0 - tDisk > 1800:
                     try:
-                        data = get_disk_info(args.log_dir, data=data)
+                        new_data = get_disk_info(args.log_dir)
+                        data['disk'] = new_data
                     except Exception as e:
                         print(f"WARNING: failed to parse the most disk usage info: {str(e)}")
                         

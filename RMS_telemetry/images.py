@@ -1,13 +1,14 @@
 import os
 import glob
 
-from .utils import get_archive_dir, get_capture_dir, timestamp_to_rfc2822
+from .utils import get_archive_dir, get_capture_dir, timestamp_to_rfc2822, timed_lru_cache
 
 from typing import Optional, Dict, Any
 
 __all__ = ['get_radiants', 'get_image', 'get_image_data']
 
 
+@timed_lru_cache(seconds=300)
 def get_radiants(log_dir: str, date: Optional[str]=None) -> Optional[str]:
     """
     Given a path to location of the RMS logs and, optionally a date in YYYYMMDD
@@ -29,6 +30,7 @@ def get_radiants(log_dir: str, date: Optional[str]=None) -> Optional[str]:
     return radiants_image
 
 
+@timed_lru_cache(seconds=10)
 def get_image(log_dir: str, date: Optional[str]=None) -> Optional[str]:
     """
     Given a path to location of the RMS logs and, optionally a date in YYYYMMDD
@@ -65,6 +67,7 @@ def _get_content_type(filename: str):
         return 'application/octet-stream'
 
 
+@timed_lru_cache(seconds=300)
 def get_image_data(filename: str) -> Dict[str,Any]:
     """
     Given a filename that points to an image, load the image and return a

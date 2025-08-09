@@ -1,15 +1,15 @@
 import os
 import glob
 import time
-import subprocess
 from datetime import datetime
+from functools import lru_cache, wraps
 
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Union
 
 
-__all__ = ['get_archive_dir', 'get_capture_dir', 'get_disk_info',
-           'datetime_to_iso', 'timestamp_to_iso', 'now_as_iso',
-           'timestamp_to_rfc2822']
+__all__ = ['get_archive_dir', 'get_capture_dir', 'datetime_to_iso',
+           'timestamp_to_iso', 'now_as_iso', 'timestamp_to_rfc2822',
+           'timed_lru_cache']
 
 
 def datetime_to_iso(dt: datetime) -> str:
@@ -106,37 +106,19 @@ def get_capture_dir(log_dir: str, date: Optional[str]=None) -> Optional[str]:
     return latest_entry
 
 
-def get_disk_info(log_dir: str, data: Optional[Dict[str,Any]]=None) -> Dict[str,Any]:
-    """
-    Poll the disk usage associated with the log directory and return the results
-    as a dictionary.  If the data keyword is not None then the output dictionary
-    will contain an updated version of the input.
-    """
-    
-    if data is None:
-        data = {'disk': {}}
-    if 'disk' not in data:
-        data['disk'] = {}
-        
-    try:
-        dt = now_as_iso()
-        info = subprocess.check_output(['df','-B1000', log_dir],
-                                       text=True)
-        for line in info.split('\n'):
-            if line.startswith('Filesystem'):
-                continue
-            if len(line) < 3:
-                continue
-                
-            _, total, used, free, _, _ = line.split(None, 5)
-            total = int(total, 10) / 1000**2 # kB -> GB
-            used = int(used, 10) / 1000**2 # kB -> GB
-            free = int(free, 10) / 1000**2 # kB -> GB
-            data['disk']['total_gb'] = total
-            data['disk']['used_gb'] = used
-            data['disk']['free_gb'] = free
-            data['disk']['updated'] = dt
-    except subprocess.CalledProcessError as e:
-        print(f"WARNING: Failed to determine the disk usage: {str(e)}")
-        
-    return data
+def timed_lru_cache(seconds: int=600, maxsize: int=8):
+    def decorator(func):
+        func = lru_cache(maxsize=maxsize)(func)
+        func.lifetime = seconds
+        func.expiration = time.time() + func.lifetime
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Check if cache has expired
+            if time.time() >= func.expiration:
+                func.cache_clear()
+                func.expiration = time.time() + func.lifetime
+            return func(*args, **kwargs)
+
+        return wrapper
+    return decorator
