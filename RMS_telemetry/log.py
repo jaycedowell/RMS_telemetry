@@ -77,12 +77,21 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 data['detections']['n_meteor'] = 0
                 data['detections']['last_meteor'] = _DUMMY_TIME
                 data['detections']['n_meteor_final'] = 0
+                if 'next_start' in data['capture']:
+                    del data['capture']['next_start']
             elif message.startswith('Ending capture...'):
                 data['capture']['running'] = False
             elif message.startswith('Next start time:'):
                 if _CAPTURE_STARTED:
                     data['end_of_day'] = True
                     _CAPTURE_STARTED = False
+                else:
+                    _, nsdt = message.split(':', 1)
+                    nsdt = nsdt.strip()
+                    nsdt, _ = nsdt.rsplit('.', 1)
+                    nsdt = nsdt.replace(' ', 'T')
+                    nsdt += 'Z'
+                    data['capture']['next_start'] = nsdt
                     
         elif mod == 'BufferedCapture':
             if message.startswith("Block's max frame age:"):
