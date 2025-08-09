@@ -1,3 +1,4 @@
+import os
 import re
 import copy
 import json
@@ -9,7 +10,7 @@ from socketserver import BaseRequestHandler
 from urllib.parse import unquote_plus
 
 from .images import get_radiants, get_image, get_image_data
-from .utils import timestamp_to_iso
+from .utils import timestamp_to_iso, get_archive_dir
 
 from typing import Optional, Dict, Any, List
 
@@ -193,7 +194,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             
         except KeyError:
             self.send_response(404)
-            self.send_header('Content-type', 'text/plain')
+            self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
             self.wfile.write(bytes('URL not found', 'utf-8'))
@@ -202,10 +203,43 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             self.send_response(500)
             self.wfile.write('Internal Error - processing request')
             
+    @HandlerRegistry.register('/')
+    @HandlerRegistry.register('/index.html')
+    def get_index(self, params: Dict[str,Any]):
+        data = self.server.get_previous_data()
+        station_id = data['station_id']
+        country_code = station_id[:2]
+        latest_archive = get_archive_dir(self.server.log_dir)
+        latest_archive = os.path.basename(latest_archive)
+        
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html')
+        self.end_headers()
+        
+        self.wfile.write(bytes(f"""<html>
+<body>
+<h2>RMS Telemetry Server for {data['station_id']}</h2>
+<h4>Current</h4>
+<a href="/latest">Status</a><br />
+<a href="/latest/image">Latest Image (only active when capturing)</a></br>
+
+<h4>Last Completed Run</h4>
+<a href="/previous">Status</a><br />
+<a href="/previous/radiants">Radiants image</a><br />
+<a href="/previous/image">Stacked meteors image</a><br />
+<a href="https://globalmeteornetwork.org/weblog/{country_code}/{station_id}/{latest_archive}_detected/">Weblog entry</a><br />
+
+<h4>Telemetry History</h4>
+<a href="/previous/dates">Listing of available dates</a><br />
+</body>
+</html>
+        """, 'utf-8'))
+        self.wfile.flush()
+    
     @HandlerRegistry.register('/latest')
     def get_latest_status(self, params: Dict[str,Any]):
         self.send_response(200)
-        self.send_header('Content-type', 'application/json')
+        self.send_header('Content-Type', 'application/json')
         self.end_headers()
 
         self.wfile.write(bytes(json.dumps(self.server.get_data()), "utf-8"))
@@ -218,7 +252,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             data = get_image_data(filename)
             
             self.send_response(200)
-            self.send_header('Content-type', data['content-type'])
+            self.send_header('Content-Type', data['content-type'])
             self.send_header('Last-Modified', data['last-modified'])
             self.end_headers()
             
@@ -226,7 +260,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
                 
         else:
             self.send_response(404)
-            self.send_header('Content-type', 'text/plain')
+            self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
             self.wfile.write(bytes('Capture is not active', 'utf-8'))
@@ -241,13 +275,13 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         data = self.server.get_previous_data(date=date)
         if data:
             self.send_response(200)
-            self.send_header('Content-type', 'application/json')
+            self.send_header('Content-Type', 'application/json')
             self.end_headers()
 
             self.wfile.write(bytes(json.dumps(data), "utf-8"))
         else:
             self.send_response(404)
-            self.send_header('Content-type', 'text/plain')
+            self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
             self.wfile.write(bytes('URL not found', 'utf-8'))
@@ -256,10 +290,11 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
     @HandlerRegistry.register('/previous/dates')
     def get_previous_dates(self, params: Dict[str,Any]):
         self.send_response(200)
-        self.send_header('Content-type', 'application/json')
+        self.send_header('Content-Type', 'application/json')
         self.end_headers()
 
         self.wfile.write(bytes(json.dumps(self.server.get_previous_dates()), "utf-8"))
+        self.wfile.flush()
         
     @HandlerRegistry.register('/previous/radiants')
     def get_previous_radiants(self, params: Dict[str,Any]):
@@ -272,7 +307,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             data = get_image_data(filename)
             
             self.send_response(200)
-            self.send_header('Content-type', data['content-type'])
+            self.send_header('Content-Type', data['content-type'])
             self.send_header('Last-Modified', data['last-modified'])
             self.end_headers()
             
@@ -280,7 +315,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
                 
         else:
             self.send_response(404)
-            self.send_header('Content-type', 'text/plain')
+            self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
             self.wfile.write(bytes('Not found', 'utf-8'))
@@ -297,7 +332,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             data = get_image_data(filename)
             
             self.send_response(200)
-            self.send_header('Content-type', data['content-type'])
+            self.send_header('Content-Type', data['content-type'])
             self.send_header('Last-Modified', data['last-modified'])
             self.end_headers()
             
@@ -305,7 +340,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
                 
         else:
             self.send_response(404)
-            self.send_header('Content-type', 'text/plain')
+            self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
             self.wfile.write(bytes('URL not found', 'utf-8'))
