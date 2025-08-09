@@ -1,6 +1,6 @@
 import re
 
-from .utils import timestamp_to_iso
+from .utils import timestamp_to_iso, iso_age
 
 from typing import Optional, Dict, Any
 
@@ -91,7 +91,20 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                     nsdt, _ = nsdt.rsplit('.', 1)
                     nsdt = nsdt.replace(' ', 'T')
                     nsdt += 'Z'
-                    data['capture']['next_start'] = nsdt
+                    
+                    age = iso_age(nsdt)
+                    age = int(-age)
+                    hours = age // 3600
+                    minutes = age // 60 % 60
+                    seconds = age % 60
+                    value = "in "
+                    if hours > 0:
+                        value += f"{hours}:{minutes:02d}"
+                    elif minutes > 0:
+                        value += f"{minutes} min"
+                    else:
+                        value += f"{seconds} s"
+                    data['capture']['next_start'] = value
                     
         elif mod == 'BufferedCapture':
             if message.startswith("Block's max frame age:"):
