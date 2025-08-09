@@ -55,6 +55,7 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
     mtch = _logRE.search(line)
     if mtch:
         dt = f"{mtch.group('date')}T{mtch.group('time')}Z"
+        dt = dt.replace('/', '-')
         mod = mtch.group('module')
         lnum = int(mtch.group('line'), 10)
         message = mtch.group('message')
