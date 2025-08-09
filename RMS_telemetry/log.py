@@ -70,8 +70,10 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 data['capture']['running'] = True
                 data['capture']['duration_hr'] = duration
                 data['capture']['started'] = dt
+                data['capture']['latest_block'] = _DUMMY_TIME
                 data['capture']['block_max_age_s'] = 0.0
                 data['capture']['n_frames_dropped'] = 0
+                data['capture']['latest_all_white'] = _DUMMY_TIME
                 data['detections']['n_meteor'] = 0
                 data['detections']['last_meteor'] = _DUMMY_TIME
                 data['detections']['n_meteor_final'] = 0
@@ -88,8 +90,13 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 bage, _ = bage.split(None, 1)
                 bage = float(bage)
                 ndropped = int(ndropped)
+                data['capture']['latest_block'] = dt
                 data['capture']['block_max_age_s'] = bage
                 data['capture']['n_frames_dropped'] = ndropped
+                
+        elif mod == 'VideoExtraction':
+            if message.find('frames are all white') != -1:
+                data['capture']['latest_all_white'] = dt
                 
         elif mod == 'DetectStarsAndMeteors':
             if message.startswith('Detected stars:'):

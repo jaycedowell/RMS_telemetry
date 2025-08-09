@@ -79,8 +79,10 @@ class TelemetryServer(ThreadingHTTPServer):
                 if not data_obj['capture']['running']:
                     data_obj['capture']['duration_hr'] = 0.0
                     data_obj['capture']['started'] = _DUMMY_TIME
-                    data_obj['block_max_age_s'] = 0.0
-                    data_obj['n_frames_dropped'] = 0
+                    data_obj['capture']['latest_block'] = _DUMMY_TIME
+                    data_obj['capture']['block_max_age_s'] = 0.0
+                    data_obj['capture']['n_frames_dropped'] = 0
+                    data_obj['capture']['latest_all_white'] = _DUMMY_TIME
                     data_obj['detections']['n_meteor'] = 0
                     data_obj['detections']['last_meteor'] = _DUMMY_TIME
                     data_obj['detections']['n_meteor_final'] = 0
