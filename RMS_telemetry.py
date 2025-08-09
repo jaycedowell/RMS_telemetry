@@ -8,6 +8,7 @@ import os
 import glob
 import time
 import argparse
+import subprocess
 
 from RMS_telemetry.server import TelemetryServer
 from RMS_telemetry.log import parse_log_line
@@ -82,7 +83,7 @@ if __name__ == "__main__":
         while True:
             t0 = time.time()
             
-            lognames = glob.glob(os.path.join(args.log_dir, '_*.log'))
+            lognames = glob.glob(os.path.join(args.log_dir, '*.log'))
             if not lognames:
                 time.sleep(60)
                 continue
