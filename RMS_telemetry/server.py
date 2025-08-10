@@ -13,7 +13,7 @@ from .images import get_radiants, get_image, get_image_data
 from .utils import timestamp_to_iso, get_archive_dir
 from .system import *
 
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Callable
 
 
 __all__ = ['TelemetryServer', 'TelemetryHandler']
@@ -143,19 +143,23 @@ _getRE = re.compile(r'GET (/.*?(\?.*)?) HTTP.+')
 
 
 class HandlerRegistry:
+    """
+    Helper class to make it easier to add new endpoints to a TelemetryHandler.
+    """
+    
     _handlers = {}
     
     @classmethod
-    def register(cls, path):
+    def register(cls: "HandlerRegistry", path: str) -> Callable:
         def wrapper(func):
             cls._handlers[path] = func
             return func
         return wrapper
         
-    def __contains__(self, path):
+    def __contains__(self, path: str) -> bool:
         return path in self._handlers
         
-    def __getitem__(self, path):
+    def __getitem__(self, path: str) -> Callable:
         return self._handlers[path]
 
 
