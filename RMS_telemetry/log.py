@@ -108,7 +108,7 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                     data['capture']['next_start'] = value
                     
         elif mod == 'EventMonitor':
-            if message.startswith('Next Capture start'):
+            if message.startswith('Next Capture start') and message.find('minutes from now') != -1:
                 _, nsoff= message.split(';', 1)
                 nsoff = nsoff.strip()
                 nsoff, _ = nsoff.split(' ', 1)
