@@ -293,6 +293,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         data = {}
         data['system'] = get_system_info(self.server.log_dir)
         data['memory'] = get_memory_info(self.server.log_dir)
+        data['network'] = get_network_info(self.server.log_dir)
         data['disk'] = get_disk_info(self.server.log_dir)
         
         self.send_response(200)

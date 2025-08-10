@@ -1,10 +1,13 @@
+import time
 import subprocess
+from collections import namedtuple
 
-from .utils import now_as_iso, timed_lru_cache
+from .utils import timestamp_to_iso, now_as_iso, timed_lru_cache
 
 from typing import Optional, Dict, Any
 
-__all__ = ['get_disk_info', 'get_memory_info', 'get_system_info']
+__all__ = ['get_disk_info', 'get_memory_info', 'get_system_info',
+           'get_network_info']
 
 
 @timed_lru_cache(seconds=300)
@@ -68,6 +71,11 @@ def get_memory_info(log_dir: str) -> Dict[str,Any]:
 
 @timed_lru_cache(seconds=60)
 def get_system_info(log_dir: str) -> Dict[str,Any]:
+    """
+    Poll system information (hostname, uptime, load, etc.) and return the
+    results as a dictionary.
+    """
+    
     data = {}
     
     # Hostname
@@ -107,4 +115,84 @@ def get_system_info(log_dir: str) -> Dict[str,Any]:
         data['cpu_temperature_c'] = temp
     
     data['updated'] = now_as_iso()
+    return data
+
+
+# State variable to keep track of the network
+_NETWORK_CACHE = {'addr': {},
+                  'stat': {}
+                 }
+
+# Helper for storing network stats
+NetStats = namedtuple('NetStats', ['t', 'rx', 'tx'])
+
+@timed_lru_cache(seconds=60)
+def get_network_info(log_dir: str) -> Dict[str,Any]:
+    """
+    Poll the network interfaces and return information about them as a
+    dictionary.
+    """
+    
+    global _NETWORK_CACHE
+    
+    data = {}
+    
+    # Get the current interface statistics
+    t0 = time.time()
+    new_stat = {}
+    with open('/proc/net/dev', 'r') as fh:
+        for line in fh:
+            if line.startswith('Inter-') or line.startswith(' face'):
+                continue
+            if len(line) < 3:
+                continue
+                
+            fields = line.strip().split()
+            dev = fields[0].replace(':', '')
+            if dev == 'lo':
+                continue
+            rx_bytes, tx_bytes = int(fields[1], 10), int(fields[9], 10)
+            new_stat[dev] = NetStats(t0, rx_bytes, tx_bytes)
+            
+    # Refresh the address list, if needed
+    for dev in new_stat:
+        if dev not in _NETWORK_CACHE['addr']:
+            try:
+                addr_info = subprocess.check_output(['ip', 'address', 'show', 'dev', dev],
+                                                    text=True)
+                
+                for line in addr_info.split('\n'):
+                    line = line.strip()
+                    if line.startswith('inet '):
+                        _, addr, _ = line.split(None, 2)
+                        addr, _ = addr.split('/', 1)
+                        _NETWORK_CACHE['addr'][dev] = addr
+            except subprocess.CalledProcessError as e:
+                print(f"WARNING: failed to query IP address for '{dev}': {str(e)}")
+            except Exception as e:
+                print(f"WARNING: failed to determine IP address for '{dev}': {str(e)}")
+                
+    # Compute lifetime bytes received/transmitted and current average data rates
+    old_stat = _NETWORK_CACHE['stat']
+    for dev in new_stat:
+        if dev not in _NETWORK_CACHE['addr']:
+            continue
+            
+        try:
+            rx_rate = (new_stat[dev].rx - old_stat[dev].rx) / (new_stat[dev].t - old_stat[dev].t)
+            tx_rate = (new_stat[dev].tx - old_stat[dev].tx) / (new_stat[dev].t - old_stat[dev].t)
+        except KeyError:
+            rx_rate = tx_rate = 0.0
+            
+        data[dev] = {'ip': _NETWORK_CACHE['addr'][dev],
+                     'rx_gb': new_stat[dev][1]/1000**3,
+                     'tx_gb': new_stat[dev][2]/1000**3,
+                     'rx_kbps': rx_rate/1000,
+                     'tx_kbps': tx_rate/1000
+                    }
+        
+    # Update the cache for next time
+    _NETWORK_CACHE['stat'] = new_stat
+    
+    data['updated'] = timestamp_to_iso(t0)
     return data
