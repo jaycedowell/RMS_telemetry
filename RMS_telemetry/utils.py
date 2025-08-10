@@ -7,7 +7,7 @@ from functools import lru_cache, wraps
 from typing import Optional, Union
 
 
-__all__ = ['get_archive_dir', 'get_capture_dir', 'get_frame_size',
+__all__ = ['get_archive_dir', 'get_capture_dir', 'get_frames_dir',
            'datetime_to_iso', 'timestamp_to_iso', 'now_as_iso', 'iso_age',
            'timestamp_to_rfc2822', 'timed_lru_cache']
 
