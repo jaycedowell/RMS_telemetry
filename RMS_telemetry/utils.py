@@ -1,6 +1,7 @@
 import os
 import glob
 import time
+import calendar
 from datetime import datetime
 from functools import lru_cache, wraps
 
@@ -8,7 +9,8 @@ from typing import Optional, Union
 
 
 __all__ = ['get_archive_dir', 'get_capture_dir', 'get_frames_dir',
-           'datetime_to_iso', 'timestamp_to_iso', 'now_as_iso', 'iso_age',
+           'datetime_to_iso', 'iso_to_datetime', 'timestamp_to_iso',
+           'iso_to_timestamp', 'now_as_iso', 'iso_age', 'datetime_to_rfc2822',
            'timestamp_to_rfc2822', 'timed_lru_cache']
 
 
@@ -23,6 +25,14 @@ def datetime_to_iso(dt: datetime) -> str:
     return iso+'Z'
 
 
+def iso_to_datetime(iso: str) -> datetime:
+    """
+    Convert a ISO8601 timestamp into a datetime instance.
+    """
+    
+    return datetime.fromisoformat(iso)
+
+
 def timestamp_to_iso(ts: Union[int,float]) -> str:
     """
     Convert a UNIX timestamp into a ISO8601 format that doesn't contain
@@ -30,6 +40,16 @@ def timestamp_to_iso(ts: Union[int,float]) -> str:
     """
     dt = datetime.utcfromtimestamp(ts)
     return datetime_to_iso(dt)
+
+
+def iso_to_timestamp(iso: str) -> float:
+    """
+    Convert a ISO8601 timestamp into a UNIX timestamp
+    """
+    
+    dt = iso_to_datetime(iso)
+    tt = dt.timetuple()
+    return calendar.timegm(tt)
 
 
 def now_as_iso() -> str:
@@ -41,21 +61,31 @@ def now_as_iso() -> str:
     return timestamp_to_iso(time.time())
 
 
-def iso_age(iso: str) -> float:
+def iso_age(iso: str, ref: Optional[str]=None) -> float:
     """
     Given a ISO8601 time, figure out how old the timestamp is and return that
-    value in seconds.
+    value in seconds.  If `ref` is None then the current system time is used to
+    compute the age.
     
     .. note:: Negative age = time is in the future
     """
     
-    now = datetime.utcnow()
-    try:
-        dt = datetime.strptime(iso, "%Y-%m-%dT%H:%M:%SZ")
-    except ValueError:
-        dt = datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S.%sZ")
-    age = now - dt
+    if ref is None:
+        ref = datetime.utcnow()
+    else:
+        ref = iso_to_datetime(ref)
+    dt = iso_to_datetime(iso)
+    
+    age = ref - dt
     return age.total_seconds()
+
+
+def datetime_to_rfc2822(dt: datetime) -> str:
+    """
+    Convert a datetime instance into a RFC2822 time.
+    """
+    
+    return dt.strftime('%a, %d %b %Y %X %z')
 
 
 def timestamp_to_rfc2822(ts: Union[int,float]) -> str:
@@ -64,7 +94,7 @@ def timestamp_to_rfc2822(ts: Union[int,float]) -> str:
     """
     
     dt = datetime.utcfromtimestamp(ts)
-    return dt.strftime('%a, %d %b %Y %X %z')
+    return datetime_to_rfc2822(dt)
 
 
 def get_archive_dir(log_dir: str, date: Optional[str]=None) -> Optional[str]:
