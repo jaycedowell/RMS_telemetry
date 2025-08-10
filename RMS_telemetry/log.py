@@ -31,6 +31,8 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
       2025/08/09 13:19:51-INFO-EventMonitor-line:2144 - Next EventMonitor run : 13:49:51 UTC; 30.0 minutes from now
       2025/08/09 13:49:52-INFO-EventMonitor-line:2144 - Next EventMonitor run : 14:19:52 UTC; 30.0 minutes from now
       2025/08/09 13:49:52-INFO-EventMonitor-line:2148 - Next Capture start    : 02:26:43 UTC
+      ...
+      2025/08/10 00:50:23-INFO-EventMonitor-line:2146 - Next Capture start    : 02:26:43 UTC; 96.0 minutes from now
       
     As well as "Observation Summary" entries like:
       camera_fov_h                    : 88.58 
@@ -92,8 +94,9 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                     nsdt, _ = nsdt.rsplit('.', 1)
                     nsdt = nsdt.replace(' ', 'T')
                     nsdt += 'Z'
+                    nsdt = nsdt.replace('/', '-')
                     
-                    age = iso_age(nsdt)
+                    age = iso_age(nsdt, ref=dt)
                     age = int(-age)
                     hours = age // 3600
                     minutes = age // 60 % 60
@@ -108,12 +111,18 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                     data['capture']['next_start'] = value
                     
         elif mod == 'EventMonitor':
-            if message.startswith('Next Capture start') and message.find('minutes from now') != -1:
-                _, nsoff= message.split(';', 1)
-                nsoff = nsoff.strip()
-                nsoff, _ = nsoff.split(' ', 1)
+            if message.startswith('Next Capture start'):
+                _, nst= message.split(':', 1)
+                nst = nst.strip()
+                nst, _ = nst.split(' UTC', 1)
+                nsdt = f"{mtch.group('date')}T{nst}Z"
+                nsdt = nsdt.replace('/', '-')
                 
-                age = int(float(nsoff) * 60)
+                age = iso_age(nsdt, ref=dt)
+                if age > 0:
+                    # Must be tomorrow
+                    age -= 86400
+                age = int(-age)
                 hours = age // 3600
                 minutes = age // 60 % 60
                 seconds = age % 60
