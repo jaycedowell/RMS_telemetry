@@ -56,6 +56,7 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
     if mtch:
         dt = f"{mtch.group('date')}T{mtch.group('time')}Z"
         dt = dt.replace('/', '-')
+        llevel = mtch.group('level')
         mod = mtch.group('module')
         lnum = int(mtch.group('line'), 10)
         message = mtch.group('message')
@@ -140,6 +141,14 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 _, nmeteor_final = nmeteor_final.rsplit(None, 1)
                 nmeteor_final = int(nmeteor_final, 10)
                 data['detections']['n_meteor_final'] = nmeteor_final
+                
+        if llevel in ('ERROR', 'CRITICAL'):
+            llevel = llevel.lower()
+            if llevel not in data:
+                data[llevel] = []
+            if line not in data[llevel]:
+                data[llevel].append(line)
+                
     else:
         mtch = _obsRE.search(line)
         if mtch:

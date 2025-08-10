@@ -86,6 +86,11 @@ class TelemetryServer(ThreadingHTTPServer):
                     data_obj['detections']['n_meteor'] = 0
                     data_obj['detections']['last_meteor'] = _DUMMY_TIME
                     data_obj['detections']['n_meteor_final'] = 0
+                    
+                for llevel in ('error', 'critical'):
+                    if llevel in data_obj:
+                        del data_obj[llevel]
+                        
         self._data = data_obj
         
     def get_data(self) -> Dict[str,Any]:
