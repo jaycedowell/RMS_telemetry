@@ -146,8 +146,9 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
             llevel = llevel.lower()
             if llevel not in data:
                 data[llevel] = []
-            if line not in data[llevel]:
-                data[llevel].append(line.strip())
+            sline = line.strip()
+            if sline not in data[llevel]:
+                data[llevel].append(sline)
                 
     else:
         mtch = _obsRE.search(line)
