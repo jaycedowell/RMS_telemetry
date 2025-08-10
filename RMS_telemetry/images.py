@@ -1,7 +1,7 @@
 import os
 import glob
 
-from .utils import get_archive_dir, get_capture_dir, timestamp_to_rfc2822, timed_lru_cache
+from .utils import get_archive_dir, get_frames_dir, timestamp_to_rfc2822, timed_lru_cache
 
 from typing import Optional, Dict, Any
 
@@ -39,7 +39,7 @@ def get_image(log_dir: str, date: Optional[str]=None) -> Optional[str]:
     cannot be found.
     """
     
-    data_dir = get_capture_dir(log_dir, date=date)
+    data_dir = get_frames_dir(log_dir, date=date)
     
     latest_image = None
     if data_dir:

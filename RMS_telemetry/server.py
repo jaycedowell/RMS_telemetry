@@ -261,7 +261,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
     @HandlerRegistry.register('/latest/image')
     def get_latest_image(self, params: Dict[str,Any]):
         filename = get_image(self.server.log_dir)
-        if filename and filename.find('stack') == -1:
+        if filename:
             data = get_image_data(filename)
             
             self.send_response(200)

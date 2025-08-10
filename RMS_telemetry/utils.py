@@ -7,9 +7,9 @@ from functools import lru_cache, wraps
 from typing import Optional, Union
 
 
-__all__ = ['get_archive_dir', 'get_capture_dir', 'datetime_to_iso',
-           'timestamp_to_iso', 'now_as_iso', 'iso_age', 'timestamp_to_rfc2822',
-           'timed_lru_cache']
+__all__ = ['get_archive_dir', 'get_capture_dir', 'get_frame_size',
+           'datetime_to_iso', 'timestamp_to_iso', 'now_as_iso', 'iso_age',
+           'timestamp_to_rfc2822', 'timed_lru_cache']
 
 
 def datetime_to_iso(dt: datetime) -> str:
@@ -119,6 +119,41 @@ def get_capture_dir(log_dir: str, date: Optional[str]=None) -> Optional[str]:
         if mtime > latest_mtime:
             latest_entry = entry
             latest_mtime = mtime
+            
+    return latest_entry
+
+
+def get_frames_dir(log_dir: str, date: Optional[str]=None) -> Optional[str]:
+    """
+    Given a path to location of the RMS logs and, optionally a date in YYYYMMDD
+    format, return the corresponding frames files directory.  Return None if
+    the directory cannot be determined.
+    """
+    
+    data_dir = os.path.join(log_dir, '..', 'FramesFiles')
+    data_dir = os.path.abspath(data_dir)
+    
+    parent_path = data_dir
+    latest_entry = None
+    for depth in range(3):
+        entries = glob.glob(os.path.join(parent_path, '*'))
+        if date:
+            if depth == 0:
+                entries = list(filter(lambda x: x.find(date[:4]) != -1, entries))
+            else:
+                entries = list(filter(lambda x: x.find(date) != -1, entries))
+            
+        latest_mtime = 0
+        for entry in entries:
+            if not os.path.isdir(entry):
+                continue
+                
+            mtime = os.path.getmtime(entry)
+            if mtime > latest_mtime:
+                latest_entry = entry
+                latest_mtime = mtime
+                
+        parent_path = os.path.join(parent_path, os.path.basename(latest_entry))
             
     return latest_entry
 
