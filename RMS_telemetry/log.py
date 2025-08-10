@@ -199,7 +199,9 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
             if param.startswith('camera_'):
                 _, param = param.split('_', 1)
                 data['camera'][param] = value
-            if param.startswith('photometry_good'):
+            elif param.startswith('jitter_quality'):
+                data['camera']['jitter_quality'] = value
+            elif param.startswith('photometry_good'):
                 data['camera']['photometry_good'] = value
                 
     return data
