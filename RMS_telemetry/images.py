@@ -44,7 +44,7 @@ def get_stack(log_dir: str, date: Optional[str]=None) -> Optional[str]:
     stack_image = None
     if data_dir:
         stack_image = os.path.basename(data_dir)
-        stack_image += '_stack_*_meteors.png'
+        stack_image += '_stack_*_meteors.jpg'
         stack_image = os.path.join(data_dir, stack_image)
         files = glob.glob(stack_image)
         if files:
