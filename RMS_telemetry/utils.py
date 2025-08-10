@@ -30,7 +30,7 @@ def iso_to_datetime(iso: str) -> datetime:
     Convert a ISO8601 timestamp into a datetime instance.
     """
     
-    return datetime.fromisoformat(iso)
+    return datetime.fromisoformat(iso.replace('Z', ''))
 
 
 def timestamp_to_iso(ts: Union[int,float]) -> str:
