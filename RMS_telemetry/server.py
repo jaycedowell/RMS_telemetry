@@ -10,7 +10,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from socketserver import BaseRequestHandler
 from urllib.parse import unquote_plus
 
-from .images import get_radiants, get_image, get_image_data
+from .images import get_radiants, get_stack, get_image, get_image_data
 from .utils import timestamp_to_iso, get_archive_dir
 from .system import *
 
@@ -363,7 +363,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         if 'date' in params:
             date = params['date']
             
-        filename = get_image(self.server.log_dir, date=date)
+        filename = get_stack(self.server.log_dir, date=date)
         if filename:
             data = get_image_data(filename)
             
