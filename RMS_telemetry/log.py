@@ -113,7 +113,7 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 nsoff = nsoff.strip()
                 nsoff, _ = nsoff.split(' ', 1)
                 
-                age = float(nsoff) * 60
+                age = int(float(nsoff) * 60)
                 hours = age // 3600
                 minutes = age // 60 % 60
                 seconds = age % 60
@@ -152,8 +152,9 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                     data['detections']['n_meteor'] += nmeteor
                 except KeyError:
                     data['detections']['n_meteor'] = nmeteor
-                data['detections']['last_meteor'] = dt
-                
+                if nmeteor > 0:
+                    data['detections']['last_meteor'] = dt
+                    
         elif mod == 'MLFilter':
             if message.startswith('FTPdetectinfo filtered,'):
                 nmeteor_final, _ = message.split('/', 1)
