@@ -4,6 +4,7 @@ import copy
 import json
 import threading
 from collections import deque
+from datetime import datetime, timedelta
 
 from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from socketserver import BaseRequestHandler
@@ -224,6 +225,9 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         latest_archive = get_archive_dir(self.server.log_dir)
         latest_archive = os.path.basename(latest_archive)
         
+        one_week = datetime.utcnow() - timedelta(days=7)
+        one_week = one_week.strftime("%Y-%m-%d")
+        
         self.send_response(200)
         self.send_header('Content-Type', 'text/html')
         self.end_headers()
@@ -246,7 +250,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
 <a href="/previous/dates">Listing of available dates</a><br />
 
 <h4>Meteor Trajectory Info</h4>
-<a href="https://explore.globalmeteornetwork.org/gmn_data_store/participating_station?station_code__exact={station_id}&_sort_desc=created_at">Recent contributions</a><br />
+<a href="https://explore.globalmeteornetwork.org/gmn_data_store/participating_station?created_at__gte={one_week}&station_code__exact={station_id}&_sort_desc=created_at">Recent contributions</a><br />
 <a href="https://explore.globalmeteornetwork.org/gmn_data_store/-/query?sql=SELECT+ps_summary.meteor_unique_trajectory_identifier%2C%0D%0A+++++++REPLACE%28REPLACE%28ps_summary.stations%2C+%3Ap0%2C+%27%27%29%2C+%27%2C%27%2C+%27%27%29+as+other_station%2C%0D%0A+++++++m.beginning_utc_time%2C%0D%0A+++++++m.elev_deg%2C%0D%0A+++++++m.latbeg_n_deg%2C%0D%0A+++++++m.lonbeg_e_deg%2C%0D%0A+++++++m.latend_n_deg%2C%0D%0A+++++++m.lonend_e_deg%2C%0D%0A+++++++m.htbeg_km%2C%0D%0A+++++++m.htend_km%2C%0D%0A+++++++m.duration_sec%2C%0D%0A+++++++m.peak_absmag%2C%0D%0A+++++++m.vgeo_km_s%2C%0D%0A+++++++m.created_at+as+meteor_created_at%2C%0D%0A+++++++m.updated_at+as+meteor_updated_at%0D%0AFROM+%28%0D%0A++++SELECT+meteor_unique_trajectory_identifier%2C+%0D%0A+++++++++++GROUP_CONCAT%28station_code%29+as+stations%2C%0D%0A+++++++++++COUNT%28*%29+as+station_count%2C%0D%0A+++++++++++MAX%28created_at%29+as+latest_created_at%0D%0A++++FROM+participating_station+%0D%0A++++WHERE+meteor_unique_trajectory_identifier+IN+%28%0D%0A++++++++SELECT+meteor_unique_trajectory_identifier+%0D%0A++++++++FROM+participating_station+%0D%0A++++++++WHERE+station_code+%3D+%3Ap0%0D%0A++++%29%0D%0A++++GROUP+BY+meteor_unique_trajectory_identifier%0D%0A++++HAVING+COUNT%28DISTINCT+station_code%29+%3D+2%0D%0A%29+ps_summary%0D%0AJOIN+meteor+m+ON+ps_summary.meteor_unique_trajectory_identifier+%3D+m.unique_trajectory_identifier%0D%0AORDER+BY+ps_summary.latest_created_at+DESC%0D%0ALIMIT+101%3B&p0={station_id}">Recently enabled ({station_id}+one other station)</a><br />
 
 </body>
