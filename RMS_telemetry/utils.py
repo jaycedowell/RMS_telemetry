@@ -189,6 +189,11 @@ def get_frames_dir(log_dir: str, date: Optional[str]=None) -> Optional[str]:
 
 
 def timed_lru_cache(seconds: int=600, maxsize: int=8):
+    """
+    Sub-class for `functools.lru_cache` that includes a lifetime for cached
+    calls.  Useful for caching results for web services.
+    """
+    
     def decorator(func):
         func = lru_cache(maxsize=maxsize)(func)
         func.lifetime = seconds
