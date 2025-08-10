@@ -107,6 +107,25 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                         value += f"{seconds} s"
                     data['capture']['next_start'] = value
                     
+        elif mod == 'EventMonitor':
+            if message.startswith('Next Capture start'):
+                _, nsoff= message.split(';', 1)
+                nsoff = nsoff.strip()
+                nsoff, _ = nsoff.split(' ', 1)
+                
+                age = float(nsoff) * 60
+                hours = age // 3600
+                minutes = age // 60 % 60
+                seconds = age % 60
+                value = "in "
+                if hours > 0:
+                    value += f"{hours}:{minutes:02d}"
+                elif minutes > 0:
+                    value += f"{minutes} min"
+                else:
+                    value += f"{seconds} s"
+                data['capture']['next_start'] = value
+                
         elif mod == 'BufferedCapture':
             if message.startswith("Block's max frame age:"):
                 _, bage, ndropped = message.split(':', 2)
