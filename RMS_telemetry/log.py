@@ -5,7 +5,7 @@ from .utils import timestamp_to_iso, iso_age
 
 from typing import Optional, Dict, Any
 
-__all__ = ['parse_log_line']
+__all__ = ['MissedStartupException', 'parse_log_line']
 
 
 # RegEx for parsing a line in the log
@@ -23,6 +23,15 @@ _DUMMY_TIME = timestamp_to_iso(0)
 # Line lookback state to help deal with determining when an observation summary
 # was generated
 _LOOKBACK_BUFFER = deque([], 5)
+
+
+class MissedStartupException(RuntimeError):
+    """
+    Exception to help signal a capture is happening but the log poller has
+    missed the startup sequence.
+    """
+    
+    pass
 
 
 def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, Any]:
@@ -156,6 +165,9 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 data['capture']['n_frames_dropped'] = ndropped
                 data['capture']['updated'] = dt
                 
+                if not _CAPTURE_STARTED:
+                    raise MissedStartupException("Blocks coming in but capture started flag has not been set")
+                    
         elif mod == 'VideoExtraction':
             if message.find('frames are all white') != -1:
                 data['capture']['latest_all_white'] = dt
