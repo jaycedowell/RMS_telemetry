@@ -43,6 +43,7 @@ class TelemetryServer(ThreadingHTTPServer):
         self._max_history = max_history
         self._data = {}
         self._previous_data = deque([], self._max_history)
+        self._lock = RLock()
         
     @property
     def ip(self):
@@ -73,45 +74,48 @@ class TelemetryServer(ThreadingHTTPServer):
         Update the state with the most recent data.
         """
         
-        if 'end_of_day' in data_obj:
-            if data_obj['end_of_day']:
-                self._previous_data.append(copy.deepcopy(self._data))
-                del data_obj['end_of_day']
-                
-                if not data_obj['capture']['running']:
-                    data_obj['capture']['duration_hr'] = 0.0
-                    data_obj['capture']['started'] = _DUMMY_TIME
-                    data_obj['capture']['latest_block'] = _DUMMY_TIME
-                    data_obj['capture']['block_max_age_s'] = 0.0
-                    data_obj['capture']['n_frames_dropped'] = 0
-                    data_obj['capture']['latest_all_white'] = _DUMMY_TIME
-                    data_obj['detections']['n_meteor'] = 0
-                    data_obj['detections']['last_meteor'] = _DUMMY_TIME
-                    data_obj['detections']['n_meteor_final'] = 0
+        with self._lock:
+            if 'end_of_day' in data_obj:
+                if data_obj['end_of_day']:
+                    self._previous_data.append(copy.deepcopy(self._data))
+                    del data_obj['end_of_day']
                     
-                for llevel in ('error', 'critical'):
-                    if llevel in data_obj:
-                        del data_obj[llevel]
+                    if not data_obj['capture']['running']:
+                        data_obj['capture']['duration_hr'] = 0.0
+                        data_obj['capture']['started'] = _DUMMY_TIME
+                        data_obj['capture']['latest_block'] = _DUMMY_TIME
+                        data_obj['capture']['block_max_age_s'] = 0.0
+                        data_obj['capture']['n_frames_dropped'] = 0
+                        data_obj['capture']['latest_all_white'] = _DUMMY_TIME
+                        data_obj['detections']['n_meteor'] = 0
+                        data_obj['detections']['last_meteor'] = _DUMMY_TIME
+                        data_obj['detections']['n_meteor_final'] = 0
                         
-        self._data = data_obj
-        
+                    for llevel in ('error', 'critical'):
+                        if llevel in data_obj:
+                            del data_obj[llevel]
+                            
+            self._data = data_obj
+            
     def get_data(self) -> Dict[str,Any]:
         """
         Return the most recent state.
         """
         
-        return self._data
-        
+        with self._lock:
+            return copy.deepcopy(self._data)
+            
     def get_previous_dates(self) -> List[str]:
         """
         Return a list of YYYYMMDD dates in the history.
         """
         
-        dates = []
-        for entry in self._previous_data:
-            date, _ = entry['capture']['started'].split('T', 1)
-            dates.append(date.replace('-', ''))
-            
+        with self._lock:
+            dates = []
+            for entry in self._previous_data:
+                date, _ = entry['capture']['started'].split('T', 1)
+                dates.append(date.replace('-', ''))
+                
         return dates
         
     def get_previous_data(self, date: Optional[str]=None) -> Optional[Dict[str,Any]]:
@@ -122,13 +126,14 @@ class TelemetryServer(ThreadingHTTPServer):
         found None is returned.
         """
         
-        if self._previous_data:
-            if date is None:
-                return self._previous_data[-1]
-            else:
-                for entry in self._previous_data:
-                    if entry['capture']['started'].replace('-', '').startswith(date):
-                        return entry
+        with self._lock:
+            if self._previous_data:
+                if date is None:
+                    return self._previous_data[-1]
+                else:
+                    for entry in self._previous_data:
+                        if entry['capture']['started'].replace('-', '').startswith(date):
+                            return entry
         return None
         
     def run(self):
@@ -285,7 +290,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
-            self.wfile.write(bytes('Capture is not active', 'utf-8'))
+            self.wfile.write(bytes('The requested URL was not found on this server because a capture is not active.', 'utf-8'))
         self.wfile.flush()
         
     @HandlerRegistry.register('/system')
@@ -321,7 +326,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
-            self.wfile.write(bytes('URL not found', 'utf-8'))
+            self.wfile.write(bytes('The requested URL was not found on this server.', 'utf-8'))
         self.wfile.flush()
         
     @HandlerRegistry.register('/previous/dates')
@@ -355,7 +360,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
-            self.wfile.write(bytes('Not found', 'utf-8'))
+            self.wfile.write(bytes('The requested URL was not found on this server.', 'utf-8'))
         self.wfile.flush()
         
     @HandlerRegistry.register('/previous/image')
@@ -380,7 +385,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
-            self.wfile.write(bytes('URL not found', 'utf-8'))
+            self.wfile.write(bytes('The requested URL was not found on this server.', 'utf-8'))
         self.wfile.flush()
         
     @HandlerRegistry.register('/favicon.ico')
@@ -401,7 +406,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
-            self.wfile.write(bytes('URL not found', 'utf-8'))
+            self.wfile.write(bytes('The requested URL was not found on this server.', 'utf-8'))
         self.wfile.flush()
         
     def get_static_asset(self, req: str, params: Dict[str,Any]):
@@ -422,4 +427,4 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
-            self.wfile.write(bytes('URL not found', 'utf-8'))
+            self.wfile.write(bytes('The requested URL was not found on this server.', 'utf-8'))
