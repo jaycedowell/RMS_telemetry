@@ -1,4 +1,5 @@
 import re
+from collections import deque
 
 from .utils import timestamp_to_iso, iso_age
 
@@ -18,6 +19,10 @@ _CAPTURE_STARTED = False
 
 # Dummy time when we don't have a real time to report
 _DUMMY_TIME = timestamp_to_iso(0)
+
+# Line lookback state to help deal with determining when an observation summary
+# was generated
+_LOOKBACK_BUFFER = deque([], 5)
 
 
 def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, Any]:
@@ -42,6 +47,7 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
     """
     
     global _CAPTURE_STARTED
+    global _LOOKBACK_BUFFER
     
     if not data:
         data = {'capture': {},
@@ -63,7 +69,6 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
         lnum = int(mtch.group('line'), 10)
         message = mtch.group('message')
         
-        data['updated'] = dt
         if mod == 'StartCapture':
             if message.startswith('Starting capture'):
                 _CAPTURE_STARTED = True
@@ -77,13 +82,16 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 data['capture']['block_max_age_s'] = 0.0
                 data['capture']['n_frames_dropped'] = 0
                 data['capture']['latest_all_white'] = _DUMMY_TIME
+                data['capture']['updated'] = dt
                 data['detections']['n_meteor'] = 0
                 data['detections']['last_meteor'] = _DUMMY_TIME
                 data['detections']['n_meteor_final'] = 0
+                data['detections']['updated'] = dt
                 if 'next_start' in data['capture']:
                     del data['capture']['next_start']
             elif message.startswith('Ending capture...'):
                 data['capture']['running'] = False
+                data['capture']['updated'] = dt
             elif message.startswith('Next start time:'):
                 if _CAPTURE_STARTED:
                     data['end_of_day'] = True
@@ -109,6 +117,7 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                     else:
                         value += f"{seconds} s"
                     data['capture']['next_start'] = value
+                    data['capture']['updated'] = dt
                     
         elif mod == 'EventMonitor':
             if message.startswith('Next Capture start'):
@@ -134,6 +143,7 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 else:
                     value += f"{seconds} s"
                 data['capture']['next_start'] = value
+                data['capture']['updated'] = dt
                 
         elif mod == 'BufferedCapture':
             if message.startswith("Block's max frame age:"):
@@ -144,16 +154,19 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 data['capture']['latest_block'] = dt
                 data['capture']['block_max_age_s'] = bage
                 data['capture']['n_frames_dropped'] = ndropped
+                data['capture']['updated'] = dt
                 
         elif mod == 'VideoExtraction':
             if message.find('frames are all white') != -1:
                 data['capture']['latest_all_white'] = dt
+                data['capture']['updated'] = dt
                 
         elif mod == 'DetectStarsAndMeteors':
             if message.startswith('Detected stars:'):
                 _, nstar = message.split(':', 1)
                 nstar = int(nstar, 10)
                 data['detections']['n_star'] = nstar
+                data['detections']['updated'] = dt
             elif message.find('detected meteors:') != -1:
                 _, nmeteor = message.rsplit(':', 1)
                 nmeteor = int(nmeteor, 10)
@@ -163,13 +176,15 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                     data['detections']['n_meteor'] = nmeteor
                 if nmeteor > 0:
                     data['detections']['last_meteor'] = dt
-                    
+                data['detections']['updated'] = dt
+                
         elif mod == 'MLFilter':
             if message.startswith('FTPdetectinfo filtered,'):
                 nmeteor_final, _ = message.split('/', 1)
                 _, nmeteor_final = nmeteor_final.rsplit(None, 1)
                 nmeteor_final = int(nmeteor_final, 10)
                 data['detections']['n_meteor_final'] = nmeteor_final
+                data['detections']['updated'] = dt
                 
         if llevel in ('ERROR', 'CRITICAL'):
             llevel = llevel.lower()
@@ -179,6 +194,8 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
             if sline not in data[llevel]:
                 data[llevel].append(sline)
                 
+        _LOOKBACK_BUFFER.append(dt)
+        
     else:
         mtch = _obsRE.search(line)
         if mtch:
@@ -203,5 +220,8 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 data['camera']['jitter_quality'] = value
             elif param.startswith('photometry_good'):
                 data['camera']['photometry_good'] = value
+                
+            if _LOOKBACK_BUFFER:
+                data['camera']['updated'] = _LOOKBACK_BUFFER[-1]
                 
     return data
