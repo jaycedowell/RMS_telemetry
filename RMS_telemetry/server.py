@@ -10,6 +10,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from socketserver import BaseRequestHandler
 from urllib.parse import unquote_plus
 
+from .static import STATIC_BASE_DIR, get_asset_data
 from .images import get_radiants, get_stack, get_image, get_image_data
 from .utils import timestamp_to_iso, get_archive_dir
 from .system import *
@@ -206,15 +207,14 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             handler(self, params)
             
         except KeyError:
-            self.send_response(404)
-            self.send_header('Content-Type', 'text/plain')
-            self.end_headers()
-
-            self.wfile.write(bytes('URL not found', 'utf-8'))
+            self.get_static_asset(req, params)
             
         except Exception as e:
             self.send_response(500)
-            self.wfile.write('Internal Error - processing request')
+            self.send_header('Content-Type', 'text/plain')
+            self.end_headers()
+            
+            self.wfile.write(bytes('Internal Error - processing request', 'utf-8'))
             
     @HandlerRegistry.register('/')
     @HandlerRegistry.register('/index.html')
@@ -382,3 +382,44 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
 
             self.wfile.write(bytes('URL not found', 'utf-8'))
         self.wfile.flush()
+        
+    @HandlerRegistry.register('/favicon.ico')
+    def get_favicon(self, params: Dict[str,Any]):
+        filename = os.path.join(STATIC_BASE_DIR, 'images', 'favicon.ico')
+        data = get_asset_data(filename)
+        if data:
+            dself.send_response(200)
+            self.send_header('Content-Type', data['content-type'])
+            if data['content-encoding'] is not None:
+                self.send_header('Content-Encoding', data['content-encoding'])
+            self.send_header('Last-Modified', data['last-modified'])
+            self.end_headers()
+            
+            self.wfile.write(data['data'])
+        else:
+            self.send_response(404)
+            self.send_header('Content-Type', 'text/plain')
+            self.end_headers()
+
+            self.wfile.write(bytes('URL not found', 'utf-8'))
+        self.wfile.flush()
+        
+    def get_static_asset(self, req: str, params: Dict[str,Any]):
+        filename = os.path.join(STATIC_BASE_DIR, reg)
+        data = get_static_asset(filename)
+        if data:
+            self.send_response(200)
+            self.send_header('Content-Type', data['content-type'])
+            if data['content-encoding'] is not None:
+                self.send_header('Content-Encoding', data['content-encoding'])
+            self.send_header('Last-Modified', data['last-modified'])
+            self.end_headers()
+            
+            self.wfile.write(data['data'])
+            
+        else:
+            self.send_response(404)
+            self.send_header('Content-Type', 'text/plain')
+            self.end_headers()
+
+            self.wfile.write(bytes('URL not found', 'utf-8'))
