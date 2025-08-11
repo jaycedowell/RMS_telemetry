@@ -11,7 +11,7 @@ import argparse
 import subprocess
 
 from RMS_telemetry.server import TelemetryServer
-from RMS_telemetry.log import parse_log_line
+from RMS_telemetry.log import MissedStartupException, parse_log_line
 from RMS_telemetry.utils import *
 from RMS_telemetry.system import *
 
@@ -79,6 +79,7 @@ if __name__ == "__main__":
 
     print(f"Started server on {server.ip}, port {server.port}")
     print("Press ctrl-C to exit")
+    n_lines_parse = 100
     try:
         while True:
             t0 = time.time()
@@ -95,7 +96,7 @@ if __name__ == "__main__":
                 code = os.path.basename(logcurr)
                 _, code, _ = code.split('_', 2)
                 
-                latest = subprocess.check_output(['tail', '-n100', logcurr],
+                latest = subprocess.check_output(['tail', f"-n{n_lines_parse}", logcurr],
                                                  text=True)
                                                  
                 data = server.get_data()
@@ -110,12 +111,22 @@ if __name__ == "__main__":
                         data['disk'] = new_data
                         tDisk = t0
                     except Exception as e:
-                        print(f"WARNING: failed to parse the most disk usage info: {str(e)}")
+                        print(f"WARNING: failed to parse disk usage info: {str(e)}")
                         
                 server.set_data(data)
-                             
+                
+                try:
+                    n_lines_parse = n_lines_parse_old
+                    del n_lines_parse_old
+                except NameError:
+                    pass
+                    
             except subprocess.CalledProcessError as e:
                 print(f"WARNING: failed to poll the most recent log: {str(e)}")
+            except MissedStartupException:
+                n_lines_parse_old = n_lines_parse
+                n_lines_parse = 250
+                continue
             except Exception as e:
                 print(f"WARNING: failed to parse the most recent log: {str(e)}")
                 
