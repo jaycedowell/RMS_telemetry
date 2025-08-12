@@ -489,10 +489,6 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         self.wfile.write(data['data'])
         self.wfile.flush()
         
-    @HandlerRegistry.register('/favicon.ico')
-    def get_favicon(self, params: Dict[str,Any]):
-        self.get_static_asset('/images/favicon.ico')
-        
     def get_static_asset(self, req: str, params: Dict[str,Any]):
         filename = get_asset(req)
         
@@ -525,3 +521,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
             self.wfile.write(bytes('The requested URL was not found on this server.', 'utf-8'))
+            
+    @HandlerRegistry.register('/favicon.ico')
+    def get_favicon(self, params: Dict[str,Any]):
+        self.get_static_asset('/images/favicon.ico')
