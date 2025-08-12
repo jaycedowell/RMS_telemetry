@@ -23,7 +23,7 @@ def is_valid_asset(filename: str) -> bool:
     valid = False
     filename = os.path.abspath(filename)
     if os.path.commonpath([STATIC_BASE_DIR, filename]) == STATIC_BASE_DIR:
-        if os.path.exits(filename):
+        if os.path.exists(filename):
             valid = True
             
     return valid
