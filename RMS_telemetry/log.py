@@ -198,6 +198,14 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 data['detections']['n_meteor_final'] = nmeteor_final
                 data['detections']['updated'] = dt
                 
+        elif mode == 'Reprocess':
+            if message.startswith('Astrometric calibration'):
+                value = False
+                if message.find('SUCCESSFUL') != -1:
+                    value = True
+                data['camera']['astrometry_good'] = value
+                data['camera']['updated'] = dt
+            
         if llevel in ('ERROR', 'CRITICAL'):
             llevel = llevel.lower()
             if llevel not in data:
