@@ -1,12 +1,11 @@
 import os
 import glob
 import mimetype
+from functools import lru_cache
 
-from .utils import timed_lru_cache
+from typing import Dict, Any, Optional
 
-from typing import Dict, Any
-
-__all__ = ['STATIC_BASE_DIR', 'is_valid_asset', 'get_asset_data']
+__all__ = ['STATIC_BASE_DIR', 'is_valid_asset', 'get_asset', 'get_asset_data']
 
 
 # Base directory for static assets
@@ -14,7 +13,7 @@ STATIC_BASE_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                'assets')
 
 
-@timed_lru_cache(seconds=300)
+@lru_cache(maxsize=32)
 def is_valid_asset(filename: str) -> bool:
     """
     Helper function to verify if the requested filename is really a static asset
@@ -30,7 +29,22 @@ def is_valid_asset(filename: str) -> bool:
     return valid
 
 
-@timed_lru_cache(seconds=300)
+@timed_lru_cache(maxsize=32)
+def get_asset(request_path: str) -> Optional[str]:
+    """
+    Given a request path for a static asset, validate that that it is a valid 
+    asset and return the actual filename .  Returns None if the asset cannot be
+    found.
+    """
+    
+    filename = os.path.join(STATIC_BASE_DIR, request_path)
+    if not is_valid_asset(filename):
+        filename = None
+        
+    return filename
+
+
+@timed_lru_cache(maxsize=32)
 def get_asset_data(filename: str) -> Dict[str,Any]:
     """
     Given a filename that supposedly points to a static file, validate that it

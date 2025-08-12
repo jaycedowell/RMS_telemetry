@@ -10,9 +10,9 @@ from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from socketserver import BaseRequestHandler
 from urllib.parse import unquote_plus
 
-from .static import STATIC_BASE_DIR, get_asset_data
+from .static import get_asset, get_asset_data
 from .images import get_radiants, get_stack, get_image, get_image_data
-from .utils import timestamp_to_iso, get_archive_dir
+from .utils import timestamp_to_iso, timestamp_to_rfc2822, get_archive_dir
 from .system import *
 
 from typing import Optional, Dict, Any, List, Callable
@@ -42,8 +42,10 @@ class TelemetryServer(ThreadingHTTPServer):
         self._log_dir = log_dir
         self._max_history = max_history
         self._data = {}
+        self._last_modified = _DUMMY_TIME
         self._previous_data = deque([], self._max_history)
-        self._lock = RLock()
+        self._previous_last_modified = _DUMMY_TIME
+        self._lock = threading.RLock()
         
     @property
     def ip(self):
@@ -69,6 +71,22 @@ class TelemetryServer(ThreadingHTTPServer):
         
         return self._log_dir
         
+    @property
+    def last_modified(self):
+        """
+        Return a RFC2822 time of when the main data structure was last modified.
+        """
+        
+        return self._last_modified
+        
+    @property
+    def previous_last_modified(self):
+        """
+        Return a RFC2822 time of when the history data structure was last modified.
+        """
+        
+        return self._previous_last_modified
+        
     def set_data(self, data_obj: Dict[str,Any]):
         """
         Update the state with the most recent data.
@@ -78,6 +96,8 @@ class TelemetryServer(ThreadingHTTPServer):
             if 'end_of_day' in data_obj:
                 if data_obj['end_of_day']:
                     self._previous_data.append(copy.deepcopy(self._data))
+                    updated = max([self._data[key]['updated'] for key in ('capture', 'detections', 'camera', 'disk')])
+                    self._previous_last_modified = timestamp_to_rfc2822(updated)
                     del data_obj['end_of_day']
                     
                     if not data_obj['capture']['running']:
@@ -96,6 +116,8 @@ class TelemetryServer(ThreadingHTTPServer):
                             del data_obj[llevel]
                             
             self._data = data_obj
+            updated = max([data_obj[key]['updated'] for key in ('capture', 'detections', 'camera', 'disk')])
+            self._last_modified = timestamp_to_rfc2822(updated)
             
     def get_data(self) -> Dict[str,Any]:
         """
@@ -146,7 +168,16 @@ class TelemetryServer(ThreadingHTTPServer):
         server_thread.start()
 
 
+# RegEx to match a GET request
 _getRE = re.compile(r'GET (/.*?(\?.*)?) HTTP.+')
+
+
+class URLNotFoundError(RuntimeError):
+    """
+    Exception class for when a request would return a 404.
+    """
+    
+    pass
 
 
 class HandlerRegistry:
@@ -214,6 +245,13 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         except KeyError:
             self.get_static_asset(req, params)
             
+        except URLNotFoundError:
+            self.send_response(404)
+            self.send_header('Content-Type', 'text/plain')
+            self.end_headers()
+
+            self.wfile.write(bytes('The requested URL was not found on this server because a capture is not active.', 'utf-8'))
+            
         except Exception as e:
             self.send_response(500)
             self.send_header('Content-Type', 'text/plain')
@@ -265,32 +303,51 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
     
     @HandlerRegistry.register('/latest')
     def get_latest_status(self, params: Dict[str,Any]):
+        mtime = self.server.last_modified
+        
+        if self.headers.get('If-Modified-Since') == mtime:
+            self.send_response(304)
+            self.send_header('Last-Modified', mtime)
+            self.send_header('Cache-Control', 'max-age=30, must-revalidate')
+            self.end_headers()
+            return
+            
+        data = self.server.get_data()
+        
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
+        self.send_header('Last-Modified', mtime)
+        self.send_header('Cache-Control', 'max-age=30, must-revalidate')
         self.end_headers()
 
-        self.wfile.write(bytes(json.dumps(self.server.get_data()), "utf-8"))
+        self.wfile.write(bytes(json.dumps(data), "utf-8"))
         self.wfile.flush()
         
     @HandlerRegistry.register('/latest/image')
     def get_latest_image(self, params: Dict[str,Any]):
         filename = get_image(self.server.log_dir)
-        if filename:
-            data = get_image_data(filename)
+        if filename is None:
+            raise URLNotFoundError()
             
-            self.send_response(200)
-            self.send_header('Content-Type', data['content-type'])
-            self.send_header('Last-Modified', data['last-modified'])
+        mtime = os.path.getmtime(filename)
+        mtime = timestamp_to_rfc2822(mtime)
+        
+        if self.headers.get('If-Modified-Since') == mtime:
+            self.send_response(304)
+            self.send_header('Last-Modified', mtime)
+            self.send_header('Cache-Control', 'max-age=30, must-revalidate')
             self.end_headers()
+            return
             
-            self.wfile.write(data['data'])
-                
-        else:
-            self.send_response(404)
-            self.send_header('Content-Type', 'text/plain')
-            self.end_headers()
-
-            self.wfile.write(bytes('The requested URL was not found on this server because a capture is not active.', 'utf-8'))
+        data = get_image_data(filename)
+        
+        self.send_response(200)
+        self.send_header('Content-Type', data['content-type'])
+        self.send_header('Last-Modified', data['last-modified'])
+        self.send_header('Cache-Control', 'max-age=30, must-revalidate')
+        self.end_headers()
+        
+        self.wfile.write(data['data'])
         self.wfile.flush()
         
     @HandlerRegistry.register('/system')
@@ -314,28 +371,48 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         if 'date' in params:
             date = str(params['date'])
             
+        mtime = self.server.previous_last_modified
+        
+        if self.headers.get('If-Modified-Since') == mtime:
+            self.send_response(304)
+            self.send_header('Last-Modified', mtime)
+            self.send_header('Cache-Control', 'max-age=300, must-revalidate')
+            self.end_headers()
+            return
+            
         data = self.server.get_previous_data(date=date)
-        if data:
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
+        if data is None:
+            raise URLNotFoundError()
+            
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Last-Modified', mtime)
+        self.send_header('Cache-Control', 'max-age=300, must-revalidate')
+        self.end_headers()
 
-            self.wfile.write(bytes(json.dumps(data), "utf-8"))
-        else:
-            self.send_response(404)
-            self.send_header('Content-Type', 'text/plain')
-            self.end_headers()
-
-            self.wfile.write(bytes('The requested URL was not found on this server.', 'utf-8'))
+        self.wfile.write(bytes(json.dumps(data), "utf-8"))
         self.wfile.flush()
         
     @HandlerRegistry.register('/previous/dates')
     def get_previous_dates(self, params: Dict[str,Any]):
+        mtime = self.server.previous_last_modified
+        
+        if self.headers.get('If-Modified-Since') == mtime:
+            self.send_response(304)
+            self.send_header('Last-Modified', mtime)
+            self.send_header('Cache-Control', 'max-age=300, must-revalidate')
+            self.end_headers()
+            return
+            
+        data = self.server.get_previous_dates()
+        
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
+        self.send_header('Last-Modified', mtime)
+        self.send_header('Cache-Control', 'max-age=300, must-revalidate')
         self.end_headers()
 
-        self.wfile.write(bytes(json.dumps(self.server.get_previous_dates()), "utf-8"))
+        self.wfile.write(bytes(json.dumps(data), "utf-8"))
         self.wfile.flush()
         
     @HandlerRegistry.register('/previous/radiants')
@@ -345,22 +422,28 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             date = params['date']
             
         filename = get_radiants(self.server.log_dir, date=date)
-        if filename:
-            data = get_image_data(filename)
+        if filename is None:
+            raise URLNotFoundError()
             
-            self.send_response(200)
-            self.send_header('Content-Type', data['content-type'])
-            self.send_header('Last-Modified', data['last-modified'])
+        mtime = os.path.getmtime(filename)
+        mtime = timestamp_to_rfc2822(mtime)
+        
+        if self.headers.get('If-Modified-Since') == mtime:
+            self.send_response(304)
+            self.send_header('Last-Modified', mtime)
+            self.send_header('Cache-Control', 'max-age=300, must-revalidate')
             self.end_headers()
+            return
             
-            self.wfile.write(data['data'])
-                
-        else:
-            self.send_response(404)
-            self.send_header('Content-Type', 'text/plain')
-            self.end_headers()
-
-            self.wfile.write(bytes('The requested URL was not found on this server.', 'utf-8'))
+        data = get_image_data(filename)
+        
+        self.send_response(200)
+        self.send_header('Content-Type', data['content-type'])
+        self.send_header('Last-Modified', data['last-modified'])
+        self.send_header('Cache-Control', 'max-age=300, must-revalidate')
+        self.end_headers()
+        
+        self.wfile.write(data['data'])
         self.wfile.flush()
         
     @HandlerRegistry.register('/previous/image')
@@ -370,54 +453,56 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             date = params['date']
             
         filename = get_stack(self.server.log_dir, date=date)
-        if filename:
-            data = get_image_data(filename)
+        if filename is None:
+            raise URLNotFoundError()
             
-            self.send_response(200)
-            self.send_header('Content-Type', data['content-type'])
-            self.send_header('Last-Modified', data['last-modified'])
+        mtime = os.path.getmtime(filename)
+        mtime = timestamp_to_rfc2822(mtime)
+        
+        if self.headers.get('If-Modified-Since') == mtime:
+            self.send_response(304)
+            self.send_header('Last-Modified', mtime)
+            self.send_header('Cache-Control', 'max-age=300, must-revalidate')
             self.end_headers()
+            return
             
-            self.wfile.write(data['data'])
-                
-        else:
-            self.send_response(404)
-            self.send_header('Content-Type', 'text/plain')
-            self.end_headers()
-
-            self.wfile.write(bytes('The requested URL was not found on this server.', 'utf-8'))
+        data = get_image_data(filename)
+        
+        self.send_response(200)
+        self.send_header('Content-Type', data['content-type'])
+        self.send_header('Last-Modified', data['last-modified'])
+        self.send_header('Cache-Control', 'max-age=300, must-revalidate')
+        self.end_headers()
+        
+        self.wfile.write(data['data'])
         self.wfile.flush()
         
     @HandlerRegistry.register('/favicon.ico')
     def get_favicon(self, params: Dict[str,Any]):
-        filename = os.path.join(STATIC_BASE_DIR, 'images', 'favicon.ico')
-        data = get_asset_data(filename)
-        if data:
-            dself.send_response(200)
-            self.send_header('Content-Type', data['content-type'])
-            if data['content-encoding'] is not None:
-                self.send_header('Content-Encoding', data['content-encoding'])
-            self.send_header('Last-Modified', data['last-modified'])
-            self.end_headers()
-            
-            self.wfile.write(data['data'])
-        else:
-            self.send_response(404)
-            self.send_header('Content-Type', 'text/plain')
-            self.end_headers()
-
-            self.wfile.write(bytes('The requested URL was not found on this server.', 'utf-8'))
-        self.wfile.flush()
+        self.get_static_asset('/images/favicon.ico')
         
     def get_static_asset(self, req: str, params: Dict[str,Any]):
-        filename = os.path.join(STATIC_BASE_DIR, reg)
-        data = get_static_asset(filename)
-        if data:
+        filename = get_asset(req)
+        
+        if filename:
+            mtime = os.path.getmtime(filename)
+            mtime = timestamp_to_rfc2822(mtime)
+            
+            if self.headers.get('If-Modified-Since') == mtime:
+                self.send_response(304)
+                self.send_header('Last-Modified', mtime)
+                self.send_header('Cache-Control', 'max-age=600, must-revalidate')
+                self.end_headers()
+                return
+                
+            data = get_asset_data(filename)
+            
             self.send_response(200)
             self.send_header('Content-Type', data['content-type'])
             if data['content-encoding'] is not None:
                 self.send_header('Content-Encoding', data['content-encoding'])
             self.send_header('Last-Modified', data['last-modified'])
+            self.send_header('Cache-Control', 'max-age=600, must-revalidate')
             self.end_headers()
             
             self.wfile.write(data['data'])
