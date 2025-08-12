@@ -524,4 +524,34 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             
     @HandlerRegistry.register('/favicon.ico')
     def get_favicon(self, params: Dict[str,Any]):
-        self.get_static_asset('/images/favicon.ico')
+        filename = get_asset('/images/favicon.ico')
+        
+        if filename:
+            mtime = os.path.getmtime(filename)
+            mtime = timestamp_to_rfc2822(mtime)
+            
+            if self.headers.get('If-Modified-Since') == mtime:
+                self.send_response(304)
+                self.send_header('Last-Modified', mtime)
+                self.send_header('Cache-Control', 'max-age=600, must-revalidate')
+                self.end_headers()
+                return
+                
+            data = get_asset_data(filename)
+            
+            self.send_response(200)
+            self.send_header('Content-Type', data['content-type'])
+            if data['content-encoding'] is not None:
+                self.send_header('Content-Encoding', data['content-encoding'])
+            self.send_header('Last-Modified', data['last-modified'])
+            self.send_header('Cache-Control', 'max-age=600, must-revalidate')
+            self.end_headers()
+            
+            self.wfile.write(data['data'])
+            
+        else:
+            self.send_response(404)
+            self.send_header('Content-Type', 'text/plain')
+            self.end_headers()
+
+            self.wfile.write(bytes('The requested URL was not found on this server.', 'utf-8'))
