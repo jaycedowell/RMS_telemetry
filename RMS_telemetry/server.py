@@ -96,7 +96,7 @@ class TelemetryServer(ThreadingHTTPServer):
             if 'end_of_day' in data_obj:
                 if data_obj['end_of_day']:
                     self._previous_data.append(copy.deepcopy(self._data))
-                    updated = max([self._data[key]['updated'] for key in ('capture', 'detections', 'camera', 'disk')])
+                    updated = max([self._data[key]['updated'] for key in ('capture', 'detections', 'camera', 'disk') if key in data_obj])
                     self._previous_last_modified = timestamp_to_rfc2822(updated)
                     del data_obj['end_of_day']
                     
@@ -116,7 +116,7 @@ class TelemetryServer(ThreadingHTTPServer):
                             del data_obj[llevel]
                             
             self._data = data_obj
-            updated = max([data_obj[key]['updated'] for key in ('capture', 'detections', 'camera', 'disk')])
+            updated = max([data_obj[key]['updated'] for key in ('capture', 'detections', 'camera', 'disk') if key in data_obj])
             self._last_modified = timestamp_to_rfc2822(updated)
             
     def get_data(self) -> Dict[str,Any]:
