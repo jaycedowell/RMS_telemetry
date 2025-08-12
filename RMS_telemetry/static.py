@@ -3,6 +3,8 @@ import glob
 import mimetypes
 from functools import lru_cache
 
+from .utils import timestamp_to_rfc2822
+
 from typing import Dict, Any, Optional
 
 __all__ = ['STATIC_BASE_DIR', 'is_valid_asset', 'get_asset', 'get_asset_data']
