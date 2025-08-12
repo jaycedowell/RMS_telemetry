@@ -12,7 +12,7 @@ from urllib.parse import unquote_plus
 
 from .static import get_asset, get_asset_data
 from .images import get_radiants, get_stack, get_image, get_image_data
-from .utils import timestamp_to_iso, timestamp_to_rfc2822, get_archive_dir
+from .utils import timestamp_to_iso, iso_to_timestamp, timestamp_to_rfc2822, get_archive_dir
 from .system import *
 
 from typing import Optional, Dict, Any, List, Callable
@@ -100,6 +100,7 @@ class TelemetryServer(ThreadingHTTPServer):
                         updated = max([self._data[key]['updated'] for key in ('capture', 'detections', 'camera', 'disk') if key in self._data])
                     except ValueError:
                         updated = _DUMMY_TIME
+                    updated = iso_to_timestamp(updated)
                     self._previous_last_modified = timestamp_to_rfc2822(updated)
                     del data_obj['end_of_day']
                     
@@ -123,6 +124,7 @@ class TelemetryServer(ThreadingHTTPServer):
                 updated = max([data_obj[key]['updated'] for key in ('capture', 'detections', 'camera', 'disk') if key in data_obj])
             except ValueError:
                 updated = _DUMMY_TIME
+            updated = iso_to_timestamp(updated)
             self._last_modified = timestamp_to_rfc2822(updated)
             
     def get_data(self) -> Dict[str,Any]:
