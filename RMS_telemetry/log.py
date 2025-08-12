@@ -20,6 +20,9 @@ _CAPTURE_STARTED = False
 # Dummy time when we don't have a real time to report
 _DUMMY_TIME = timestamp_to_iso(0)
 
+# Pending camera info from Reprocess about the astronometry
+_PENDING_CAMREA = None
+
 # Line lookback state to help deal with determining when an observation summary
 # was generated
 _LOOKBACK_BUFFER = deque([], 5)
@@ -56,6 +59,7 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
     """
     
     global _CAPTURE_STARTED
+    global _PENDING_CAMREA
     global _LOOKBACK_BUFFER
     
     if not data:
@@ -203,9 +207,9 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 value = False
                 if message.find('SUCCESSFUL') != -1:
                     value = True
-                data['camera']['astrometry_good'] = value
-                data['camera']['updated'] = dt
-            
+                _PENDING_CAMREA = {'astrometry_good': value,
+                                   'updated': dt}
+                
         if llevel in ('ERROR', 'CRITICAL'):
             llevel = llevel.lower()
             if llevel not in data:
@@ -239,6 +243,9 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
             elif param.startswith('jitter_quality'):
                 data['camera']['jitter_quality'] = value
             elif param.startswith('photometry_good'):
+                if _PENDING_CAMREA is not None:
+                    data['camera']['astrometry_good'] = _PENDING_CAMREA['astrometry_good']
+                    _PENDING_CAMREA = None
                 data['camera']['photometry_good'] = value
                 
             if _LOOKBACK_BUFFER:
