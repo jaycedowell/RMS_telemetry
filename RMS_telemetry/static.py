@@ -29,7 +29,7 @@ def is_valid_asset(filename: str) -> bool:
     return valid
 
 
-@timed_lru_cache(maxsize=32)
+@lru_cache(maxsize=32)
 def get_asset(request_path: str) -> Optional[str]:
     """
     Given a request path for a static asset, validate that that it is a valid 
@@ -44,7 +44,7 @@ def get_asset(request_path: str) -> Optional[str]:
     return filename
 
 
-@timed_lru_cache(maxsize=32)
+@lru_cache(maxsize=32)
 def get_asset_data(filename: str) -> Dict[str,Any]:
     """
     Given a filename that supposedly points to a static file, validate that it
