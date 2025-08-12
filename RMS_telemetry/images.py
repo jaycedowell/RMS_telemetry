@@ -85,7 +85,10 @@ def get_image_data(filename: str) -> Dict[str,Any]:
     
     data = {}
     if os.path.exists(filename):
-        ct, en = mimetypes.guess_file_type(filename)
+        try:
+            ct, en = mimetypes.guess_file_type(filename)
+        except AttributeError:
+            ct, en = mimetypes.guess_type(filename)
         data['content-type'] = ct
         data['content-encoding'] = en
         data['last-modified'] = timestamp_to_rfc2822(os.path.getmtime(filename))

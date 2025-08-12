@@ -56,7 +56,10 @@ def get_asset_data(filename: str) -> Dict[str,Any]:
     data = {}
     
     if is_valid_asset(filename):
-        ct, en = mimetypes.guess_file_type(filename)
+        try:
+            ct, en = mimetypes.guess_file_type(filename)
+        except AttributeError:
+            ct, en = mimetypes.guess_type(filename)
         data['content-type'] = ct
         data['content-encoding'] = en
         data['last-modified'] = timestamp_to_rfc2822(os.path.getmtime(filename))
