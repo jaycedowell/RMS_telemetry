@@ -198,7 +198,7 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 data['detections']['n_meteor_final'] = nmeteor_final
                 data['detections']['updated'] = dt
                 
-        elif mode == 'Reprocess':
+        elif mod == 'Reprocess':
             if message.startswith('Astrometric calibration'):
                 value = False
                 if message.find('SUCCESSFUL') != -1:
