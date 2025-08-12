@@ -1,6 +1,6 @@
 import os
 import glob
-import mimetype
+import mimetypes
 
 from .utils import get_archive_dir, get_frames_dir, timestamp_to_rfc2822, timed_lru_cache
 
@@ -85,7 +85,7 @@ def get_image_data(filename: str) -> Dict[str,Any]:
     
     data = {}
     if os.path.exists(filename):
-        ct, en = mimetype.guess_file_type(filename)
+        ct, en = mimetypes.guess_file_type(filename)
         data['content-type'] = ct
         data['content-encoding'] = en
         data['last-modified'] = timestamp_to_rfc2822(os.path.getmtime(filename))
