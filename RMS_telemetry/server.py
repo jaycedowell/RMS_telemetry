@@ -143,6 +143,10 @@ class TelemetryServer(ThreadingHTTPServer):
         with self._lock:
             dates = []
             for entry in self._previous_data:
+                if 'capture' not in entry:
+                    continue
+                if 'started' not in entry['capture']:
+                    continue
                 date, _ = entry['capture']['started'].split('T', 1)
                 dates.append(date.replace('-', ''))
                 
