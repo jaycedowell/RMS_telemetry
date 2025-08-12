@@ -37,6 +37,10 @@ def get_asset(request_path: str) -> Optional[str]:
     found.
     """
     
+    request_path = os.path.normpath(request_path)
+    if request_path.startswith(os.path.sep):
+        request_path = request_path[1:]
+        
     filename = os.path.join(STATIC_BASE_DIR, request_path)
     if not is_valid_asset(filename):
         filename = None
