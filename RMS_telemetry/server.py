@@ -277,10 +277,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         data = self.server.get_data()
         station_id = data['station_id']
         country_code = station_id[:2]
-        latest_archive = get_archive_dir(self.server.log_dir)
-        if latest_archive is not None:
-            latest_archive = os.path.basename(latest_archive)
-            
+        
         one_week = datetime.utcnow() - timedelta(days=7)
         one_week = one_week.strftime("%Y-%m-%d")
         
@@ -300,7 +297,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
 <a href="/previous">Status</a><br />
 <a href="/previous/radiants">Radiants image</a><br />
 <a href="/previous/image">Stacked meteors image</a><br />
-<a href="https://globalmeteornetwork.org/weblog/{country_code}/{station_id}/{latest_archive}_detected/" target="_blank" rel="noopener noreferrer">Weblog entry</a><br />
+<a href="https://globalmeteornetwork.org/weblog/{country_code}/{station_id}/latest/" target="_blank" rel="noopener noreferrer">Weblog entry</a><br />
 
 <h4>Telemetry History</h4>
 <a href="/previous/dates">Listing of available dates</a><br />
