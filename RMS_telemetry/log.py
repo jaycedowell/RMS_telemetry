@@ -117,19 +117,7 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                     nsdt += 'Z'
                     nsdt = nsdt.replace('/', '-')
                     
-                    age = iso_age(nsdt, ref=dt)
-                    age = int(-age)
-                    hours = age // 3600
-                    minutes = age // 60 % 60
-                    seconds = age % 60
-                    value = "in "
-                    if hours > 0:
-                        value += f"{hours}:{minutes:02d}"
-                    elif minutes > 0:
-                        value += f"{minutes} min"
-                    else:
-                        value += f"{seconds} s"
-                    data['capture']['next_start'] = value
+                    data['capture']['next_start'] = nsdt
                     data['capture']['updated'] = dt
                     
         elif mod == 'EventMonitor':
@@ -142,20 +130,11 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 
                 age = iso_age(nsdt, ref=dt)
                 if age > 0:
-                    # Must be tomorrow
-                    age -= 86400
-                age = int(-age)
-                hours = age // 3600
-                minutes = age // 60 % 60
-                seconds = age % 60
-                value = "in "
-                if hours > 0:
-                    value += f"{hours}:{minutes:02d}"
-                elif minutes > 0:
-                    value += f"{minutes} min"
-                else:
-                    value += f"{seconds} s"
-                data['capture']['next_start'] = value
+                    # Must be in the future
+                    ts = iso_to_timestamp(nsdt)
+                    ts += 86400
+                    nsdt = timestamp_to_iso(ts)
+                data['capture']['next_start'] = nsdt
                 data['capture']['updated'] = dt
                 
         elif mod == 'BufferedCapture':
