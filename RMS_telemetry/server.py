@@ -278,8 +278,9 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         station_id = data['station_id']
         country_code = station_id[:2]
         latest_archive = get_archive_dir(self.server.log_dir)
-        latest_archive = os.path.basename(latest_archive)
-        
+        if latest_archive is not None:
+            latest_archive = os.path.basename(latest_archive)
+            
         one_week = datetime.utcnow() - timedelta(days=7)
         one_week = one_week.strftime("%Y-%m-%d")
         
