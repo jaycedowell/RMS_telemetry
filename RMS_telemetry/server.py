@@ -45,6 +45,8 @@ class TelemetryServer(ThreadingHTTPServer):
         self._last_modified = _DUMMY_TIME
         self._previous_data = deque([], self._max_history)
         self._previous_last_modified = _DUMMY_TIME
+        self._system_data = {}
+        self._system_last_modified = _DUMMY_TIME
         self._lock = threading.RLock()
         
     @property
@@ -86,6 +88,14 @@ class TelemetryServer(ThreadingHTTPServer):
         """
         
         return self._previous_last_modified
+        
+    @property
+    def system_last_modified(self):
+        """
+        Return a RFC2822 time of when the system data structure was last modified.
+        """
+        
+        return self._system_last_modified
         
     def set_data(self, data_obj: Dict[str,Any]):
         """
@@ -170,6 +180,20 @@ class TelemetryServer(ThreadingHTTPServer):
                             return entry
         return None
         
+    def set_system_data(self, data_obj: Dict[str,Any]):
+        with self._lock:
+            self._system_data = data_obj
+            try:
+                updated = max([data_obj[key]['updated'] for key in ('system', 'memory', 'network', 'disk') if key in data_obj and 'updated' in data_obj[key]])
+            except ValueError:
+                updated = _DUMMY_TIME
+            updated = iso_to_timestamp(updated)
+            self._system_last_modified = timestamp_to_rfc2822(updated)
+            
+    def get_system_data(self) -> Dict[str,Any]:
+        with self._lock:
+            return copy.deepcopy(self._system_data)
+        
     def run(self):
         """
         Start the server thread.
@@ -233,7 +257,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         if req.find('?') != -1:
             req, params = req.split('?', 1)
             params = params.split('&')
-            params = {entry.split('=')[0]: uquote_plus(entry.split('=')[1]) for entry in params}
+            params = {entry.split('=')[0]: unquote_plus(entry.split('=')[1]) for entry in params}
             for key in params:
                 value = params[key]
                 if value.lower() == 'true':
@@ -362,14 +386,21 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         
     @HandlerRegistry.register('/system')
     def get_latest_system(self, params: Dict[str,Any]):
-        data = {}
-        data['system'] = get_system_info(self.server.log_dir)
-        data['memory'] = get_memory_info(self.server.log_dir)
-        data['network'] = get_network_info(self.server.log_dir)
-        data['disk'] = get_disk_info(self.server.log_dir)
+        mtime = self.server.system_last_modified
+        
+        if self.headers.get('If-Modified-Since') == mtime:
+            self.send_response(304)
+            self.send_header('Last-Modified', mtime)
+            self.send_header('Cache-Control', 'max-age=30, must-revalidate')
+            self.end_headers()
+            return
+            
+        data = self.server.get_system_data()
         
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
+        self.send_header('Last-Modified', mtime)
+        self.send_header('Cache-Control', 'max-age=30, must-revalidate')
         self.end_headers()
 
         self.wfile.write(bytes(json.dumps(data), "utf-8"))

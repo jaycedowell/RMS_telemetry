@@ -41,9 +41,14 @@ if __name__ == "__main__":
     # Setup the server
     server = TelemetryServer(args.ip, args.port, args.log_dir)
     data = server.get_data()
+    sys_data = server.get_system_data()
     
-    # Load in the disk info - but not really
-    tDisk = 0.0
+    # Load in the system, memory, network, and disk info
+    tSys = tMem = tNet = tDisk = time.time()
+    sys_data['system'] = get_system_info(args.log_dir)
+    sys_data['memory'] = get_memory_info(args.log_dir)
+    sys_data['network'] = get_network_info(args.log_dir)
+    sys_data['disk'] = get_disk_info(args.log_dir)
     
     # Load in the old logs
     t0 = time.time()
@@ -75,6 +80,7 @@ if __name__ == "__main__":
         
     # Now that we've loaded what we can, start the server
     server.set_data(data)
+    server.set_system_data(sys_data)
     server.run()
 
     print(f"Started server on {server.ip}, port {server.port}")
@@ -93,6 +99,8 @@ if __name__ == "__main__":
             logcurr = lognames[logages.index(min(logages))]
             
             try:
+                ## Part 1 - Log file
+                ### Load the last N lines
                 code = os.path.basename(logcurr)
                 _, code, _ = code.split('_', 2)
                 
@@ -105,14 +113,7 @@ if __name__ == "__main__":
                 for line in latest.split('\n'):
                     data = parse_log_line(line, data=data)
                     
-                if t0 - tDisk > 1800:
-                    try:
-                        new_data = get_disk_info(args.log_dir)
-                        data['disk'] = new_data
-                        tDisk = t0
-                    except Exception as e:
-                        print(f"WARNING: failed to parse disk usage info: {str(e)}")
-                        
+                ### Update
                 server.set_data(data)
                 
                 try:
@@ -120,6 +121,40 @@ if __name__ == "__main__":
                     del n_lines_parse_old
                 except NameError:
                     pass
+                    
+                ## Part 2 - System info
+                ### Poll what needs to be polled
+                new_sys_data = {}
+                if t0 - tSys > 120:
+                    try:
+                        new_sys_data['system'] = get_system_info(args.log_dir)
+                        tSys = t0
+                    except Exception as e:
+                        print(f"WARNING: failed to parse system status info: {str(e)}")
+                if t0 - tMem > 300:
+                    try:
+                        new_sys_data['memory'] = get_memory_info(args.log_dir)
+                        tMem = t0
+                    except Exception as e:
+                        print(f"WARNING: failed to parse memory info: {str(e)}")
+                if t0 - tNet > 120:
+                    try:
+                        new_sys_data['network'] = get_network_info(args.log_dir)
+                        tNet = t0
+                    except Exception as e:
+                        print(f"WARNING: failed to parse network info: {str(e)}")
+                if t0 - tDisk > 1800:
+                    try:
+                        new_sys_data['disk'] = get_disk_info(args.log_dir)
+                        tDisk = t0
+                    except Exception as e:
+                        print(f"WARNING: failed to parse disk usage info: {str(e)}")
+                        
+                ### Update but only if something's changed
+                if new_sys_data:
+                    sys_data = server.get_system_data()
+                    sys_data.update(new_sys_data)
+                    server.set_system_data(sys_data)
                     
             except subprocess.CalledProcessError as e:
                 print(f"WARNING: failed to poll the most recent log: {str(e)}")
