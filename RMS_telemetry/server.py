@@ -274,7 +274,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
     @HandlerRegistry.register('/')
     @HandlerRegistry.register('/index.html')
     def get_index(self, params: Dict[str,Any]):
-        data = self.server.get_previous_data()
+        data = self.server.get_data()
         station_id = data['station_id']
         country_code = station_id[:2]
         latest_archive = get_archive_dir(self.server.log_dir)
