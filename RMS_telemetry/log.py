@@ -221,7 +221,7 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 data['camera']['photometry_good'] = value
             elif param.startswith('total_expected_fits'):
                 _EXPECTED_FITS = value
-            elif params.startswith('total_fits'):
+            elif param.startswith('total_fits'):
                 if _EXPECTED_FITS is not None:
                     data['camera']['fits_fill'] = value / _EXPECTED_FITS * 100.0
                     _EXPECTED_FITS = None
