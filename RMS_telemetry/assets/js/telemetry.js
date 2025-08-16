@@ -21,7 +21,7 @@ function updateLinks(response, status, xhr) {
   cc = sta.slice(0, 2);
   
   var last_week = new Date();
-  last_week.setTime(last_week.getDate() - 7);
+  last_week.setDate(last_week.getDate() - 7);
   var lw_str = last_week.getFullYear() + "-" + (last_week.getMonth() + 1) + "-" + last_week.getDay();
   
   var ln = document.getElementById('weblog');
