@@ -12,7 +12,7 @@ function updateStatus(response, status, xhr) {
     } else {
       var tStart = new Date(response['capture']['next_start'].slice(0,19));
       var tNow = new Date();
-      var until = (tNow.getTime() - tStart.getTime()) / 1000;
+      var until = (tStart.getTime() - tNow.getTime()) / 1000;
       var h = Math.floor(until / 3600);
       var m = Math.floor(until / 60) % 60;
       var msg = ''
@@ -68,6 +68,19 @@ function updateLinks(response, status, xhr) {
 
 var lastLatest = new Date("1970-01-01T00:00:00");
 
+function date_to_rfc2822(dt) {
+  const options = {weekday: 'short',
+                   day: '2-digit',
+                   month: 'short',
+                   year: 'numeric',
+                   hour: '2-digit',
+                   minute: '2-digit',
+                   second: '2-digit',
+                   timeZoneName: 'shortOffset'
+                  };
+   return new Intl.DateTimeFormat('en-US', options).format(dt);
+}
+
 function fetchLatest() {
   $.ajax({'url': '/latest',
           'success': function(response, status, xhr) {
@@ -79,7 +92,7 @@ function fetchLatest() {
           'error': function() {
             setTimeout(fetchLatest, 30000);
           },
-          'headers': {'If-Modified-Since': lastLatest.toUTCString()
+          'headers': {'If-Modified-Since': date_to_rfc2822(lastLatest)
           }
          });
 }
@@ -127,7 +140,7 @@ function fetchPrevious() {
           'error': function() {
             setTimeout(fetchPrevious, 900000);
           },
-          'headers': {'If-Modified-Since': lastPrevious.toUTCString()
+          'headers': {'If-Modified-Since': date_to_rfc2822(lastPrevious)
           }
          });
 }
@@ -162,7 +175,7 @@ function fetchHistory() {
           'error': function() {
             setTimeout(fetchHistory, 900000);
           },
-          'headers': {'If-Modified-Since': lastHistory.toUTCString()
+          'headers': {'If-Modified-Since': date_to_rfc2822(lastHistory)
           }
          });
 }
