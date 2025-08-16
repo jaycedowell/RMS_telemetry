@@ -89,7 +89,7 @@ function fetchLatest() {
           'success': function(response, status, xhr) {
             updateStatus(response, status, xhr);
             updateLinks(response, status, xhr);
-            lastLatest = xhr['Last-Modified']
+            lastLatest = xhr.getResponseHeader('Last-Modified');
             setTimeout(fetchLatest, 30000);
           },
           'error': function() {
@@ -137,7 +137,7 @@ function fetchPrevious() {
   $.ajax({'url': '/previous',
           'success': function(response, status, xhr) {
             updatePrevious(response, status, xhr);
-            lastPrevious = new Date();
+            lastPrevious = xhr.getResponseHeader('Last-Modified');
             setTimeout(fetchPrevious, 900000);
           },
           'error': function() {
@@ -172,7 +172,7 @@ function fetchHistory() {
   $.ajax({'url': '/previous/dates',
           'success': function(response, status, xhr) {
             updateHistory(response, status, xhr);
-            lastHistory = new Date();
+            lastHistory = xhr.getResponseHeader('Last-Modified');
             setTimeout(fetchHistory, 900000);
           },
           'error': function() {
