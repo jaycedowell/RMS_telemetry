@@ -66,23 +66,7 @@ function updateLinks(response, status, xhr) {
   }
 }
 
-var lastLatest = new Date("1970-01-01T00:00:00");
-
-function date_to_rfc2822(dt) {
-  const options = {weekday: 'short',
-                   day: '2-digit',
-                   month: 'short',
-                   year: 'numeric',
-                   hour: '2-digit',
-                   minute: '2-digit',
-                   second: '2-digit',
-                   hour12: false,
-                   timeZone: "UTC"
-                  };
-   var rfc2822 = new Intl.DateTimeFormat('en-US', options).format(dt);
-   var parts = rfc2822.replaceAll(',', '').split(' ');
-   return parts[0] + ', ' + parts[2] + ' ' + parts[1] + ' ' + parts[3] + ' ' + parts[4];
-}
+var lastLatest = 'Thu, 01 Jan 1970 00:00:00';
 
 function fetchLatest() {
   $.ajax({'url': '/latest',
@@ -95,7 +79,7 @@ function fetchLatest() {
           'error': function() {
             setTimeout(fetchLatest, 30000);
           },
-          'headers': {'If-Modified-Since': date_to_rfc2822(lastLatest)
+          'headers': {'If-Modified-Since': lastLatest
           }
          });
 }
@@ -131,7 +115,7 @@ function updatePrevious(response, status, xhr) {
   }
 }
 
-var lastPrevious = new Date("1970-01-01T00:00:00");
+var lastPrevious = 'Thu, 01 Jan 1970 00:00:00';
 
 function fetchPrevious() {
   $.ajax({'url': '/previous',
@@ -143,7 +127,7 @@ function fetchPrevious() {
           'error': function() {
             setTimeout(fetchPrevious, 900000);
           },
-          'headers': {'If-Modified-Since': date_to_rfc2822(lastPrevious)
+          'headers': {'If-Modified-Since': lastPrevious
           }
          });
 }
@@ -166,7 +150,7 @@ function updateHistory(response, status, xhr) {
   }
 }
 
-var lastHistory = new Date("1970-01-01T00:00:00");
+var lastHistory = 'Thu, 01 Jan 1970 00:00:00';
 
 function fetchHistory() {
   $.ajax({'url': '/previous/dates',
@@ -178,7 +162,7 @@ function fetchHistory() {
           'error': function() {
             setTimeout(fetchHistory, 900000);
           },
-          'headers': {'If-Modified-Since': date_to_rfc2822(lastHistory)
+          'headers': {'If-Modified-Since': lastHistory
           }
          });
 }
