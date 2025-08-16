@@ -11,7 +11,7 @@ import argparse
 import subprocess
 
 from RMS_telemetry.server import TelemetryServer
-from RMS_telemetry.log import MissedStartupException, parse_log_line
+from RMS_telemetry.log import parse_log_line
 from RMS_telemetry.utils import *
 from RMS_telemetry.system import *
 

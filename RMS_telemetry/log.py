@@ -5,7 +5,7 @@ from .utils import timestamp_to_iso, iso_to_timestamp, iso_age
 
 from typing import Optional, Dict, Any
 
-__all__ = ['MissedStartupException', 'parse_log_line']
+__all__ = ['parse_log_line']
 
 
 # RegEx for parsing a line in the log
