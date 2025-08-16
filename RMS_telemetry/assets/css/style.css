@@ -1,0 +1,14 @@
+h2, h4 {color: #333;
+       }
+a {color: #0066cc;
+   text-decoration: none;
+  }
+a:hover {text-decoration: underline;
+        }
+.section {margin-bottom: 20px;
+         }
+.loading {color: #666;
+          font-style: italic;
+         }
+.error {color: #cc0000;
+       }

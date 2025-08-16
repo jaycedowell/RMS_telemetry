@@ -53,11 +53,14 @@ if __name__ == "__main__":
     # Load in the old logs
     t0 = time.time()
     lognames = glob.glob(os.path.join(args.log_dir, 'log_*.log'))
-    logages = [t0 - os.path.getmtime(logname) for logname in lognames]
+    lognames.sort(key=os.path.getmtime)
+    
+    last_logfile = ''
+    last_logpos = 0
     while lognames:
-        oldest = logages.index(max(logages))
-        logcurr = lognames[oldest]
-        if len(lognames) > 7:
+        last_logfile = logcurr = lognames[0]
+        lognames = lognames[1:]
+        if len(lognames) > 6:
             print(f"Skipping log '{os.path.basename(logcurr)}'...")
         else:
             print(f"Parsing log '{os.path.basename(logcurr)}'...")
@@ -72,12 +75,10 @@ if __name__ == "__main__":
                         data = parse_log_line(line, data=data)
                     except Exception as e:
                         print(f"WARNING: failed to parse log '{os.path.basename(logcurr)}': {str(e)}")
-                        
+                last_logpos = fh.tell()
+                
             server.set_data(data)
             
-        del lognames[oldest]
-        del logages[oldest]
-        
     # Now that we've loaded what we can, start the server
     server.set_data(data)
     server.set_system_data(sys_data)
@@ -85,34 +86,40 @@ if __name__ == "__main__":
 
     print(f"Started server on {server.ip}, port {server.port}")
     print("Press ctrl-C to exit")
-    n_lines_parse = 100
     try:
         while True:
             t0 = time.time()
             
-            lognames = glob.glob(os.path.join(args.log_dir, '*.log'))
+            lognames = glob.glob(os.path.join(args.log_dir, 'log_*.log'))
             if not lognames:
                 time.sleep(60)
                 continue
                 
-            logages = [t0 - os.path.getmtime(logname) for logname in lognames]
-            logcurr = lognames[logages.index(min(logages))]
-            
+            lognames.sort(key=os.path.getmtime)
+            logcurr = lognames[-1]
+            if logcurr != last_logfile:
+                last_logfile = logcurr
+                last_logpos = 0
+                
             try:
                 ## Part 1 - Log file
-                ### Load the last N lines
+                ### Load what's new in the file
                 code = os.path.basename(logcurr)
                 _, code, _ = code.split('_', 2)
                 
-                latest = subprocess.check_output(['tail', f"-n{n_lines_parse}", logcurr],
-                                                 text=True)
-                                                 
                 data = server.get_data()
                 data['station_id'] = code
                 
-                for line in latest.split('\n'):
-                    data = parse_log_line(line, data=data)
+                with open(logcurr, 'r') as fh:
+                    fh.seek(last_logpos, 0)
+                    open_size = os.path.getsize(logcurr)
                     
+                    for line in fh:
+                        data = parse_log_line(line, data=data)
+                        last_logpos = fh.tell()
+                        if last_logpos >= open_size:
+                            break
+                            
                 ### Update
                 server.set_data(data)
                 
@@ -156,12 +163,6 @@ if __name__ == "__main__":
                     sys_data.update(new_sys_data)
                     server.set_system_data(sys_data)
                     
-            except subprocess.CalledProcessError as e:
-                print(f"WARNING: failed to poll the most recent log: {str(e)}")
-            except MissedStartupException:
-                n_lines_parse_old = n_lines_parse
-                n_lines_parse = 250
-                continue
             except Exception as e:
                 print(f"WARNING: failed to parse the most recent log: {str(e)}")
                 
@@ -173,7 +174,7 @@ if __name__ == "__main__":
                 tSleep = 60 - (t1 - t0)
                 
     except KeyboardInterrupt:
-        print("Stopping server..")
+        print("Stopping server...")
         
     server.shutdown() 
-    print("Server stopped.") 
+    print("Server stopped") 

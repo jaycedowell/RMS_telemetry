@@ -274,6 +274,11 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
                             pass
                 params[key] = value
                 
+        if req == '/':
+            req = '/index.html'
+        elif req == '/favicon.ico':
+            req = '/images/favicon.ico'
+            
         try:
             handler = self._handlers[req]
             handler(self, params)
@@ -295,46 +300,6 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             
             self.wfile.write(bytes('Internal Error - processing request', 'utf-8'))
             
-    @HandlerRegistry.register('/')
-    @HandlerRegistry.register('/index.html')
-    def get_index(self, params: Dict[str,Any]):
-        data = self.server.get_data()
-        station_id = data['station_id']
-        country_code = station_id[:2]
-        
-        one_week = datetime.utcnow() - timedelta(days=7)
-        one_week = one_week.strftime("%Y-%m-%d")
-        
-        self.send_response(200)
-        self.send_header('Content-Type', 'text/html')
-        self.end_headers()
-        
-        self.wfile.write(bytes(f"""<html>
-<body>
-<h2>RMS Telemetry Server for {data['station_id']}</h2>
-<h4>Current</h4>
-<a href="/latest">Status</a><br />
-<a href="/latest/image">Latest Image (only active when capturing)</a></br>
-<a href="/system">System status</a><br />
-
-<h4>Last Completed Run</h4>
-<a href="/previous">Status</a><br />
-<a href="/previous/radiants">Radiants image</a><br />
-<a href="/previous/image">Stacked meteors image</a><br />
-<a href="https://globalmeteornetwork.org/weblog/{country_code}/{station_id}/latest/" target="_blank" rel="noopener noreferrer">Weblog entry</a><br />
-
-<h4>Telemetry History</h4>
-<a href="/previous/dates">Listing of available dates</a><br />
-
-<h4>Meteor Trajectory Info</h4>
-<a href="https://explore.globalmeteornetwork.org/gmn_data_store/participating_station?created_at__gte={one_week}&station_code__exact={station_id}&_sort_desc=created_at" target="_blank" rel="noopener noreferrer">Recent contributions</a><br />
-<a href="https://explore.globalmeteornetwork.org/gmn_data_store/-/query?sql=SELECT+ps_summary.meteor_unique_trajectory_identifier%2C%0D%0A+++++++REPLACE%28REPLACE%28ps_summary.stations%2C+%3Ap0%2C+%27%27%29%2C+%27%2C%27%2C+%27%27%29+as+other_station%2C%0D%0A+++++++m.beginning_utc_time%2C%0D%0A+++++++m.elev_deg%2C%0D%0A+++++++m.latbeg_n_deg%2C%0D%0A+++++++m.lonbeg_e_deg%2C%0D%0A+++++++m.latend_n_deg%2C%0D%0A+++++++m.lonend_e_deg%2C%0D%0A+++++++m.htbeg_km%2C%0D%0A+++++++m.htend_km%2C%0D%0A+++++++m.duration_sec%2C%0D%0A+++++++m.peak_absmag%2C%0D%0A+++++++m.vgeo_km_s%2C%0D%0A+++++++m.created_at+as+meteor_created_at%2C%0D%0A+++++++m.updated_at+as+meteor_updated_at%0D%0AFROM+%28%0D%0A++++SELECT+meteor_unique_trajectory_identifier%2C+%0D%0A+++++++++++GROUP_CONCAT%28station_code%29+as+stations%2C%0D%0A+++++++++++COUNT%28*%29+as+station_count%2C%0D%0A+++++++++++MAX%28created_at%29+as+latest_created_at%0D%0A++++FROM+participating_station+%0D%0A++++WHERE+meteor_unique_trajectory_identifier+IN+%28%0D%0A++++++++SELECT+meteor_unique_trajectory_identifier+%0D%0A++++++++FROM+participating_station+%0D%0A++++++++WHERE+station_code+%3D+%3Ap0+AND+created_at+%3E%3D+%3Ap1%0D%0A++++%29%0D%0A++++GROUP+BY+meteor_unique_trajectory_identifier%0D%0A++++HAVING+COUNT%28DISTINCT+station_code%29+%3D+2%0D%0A%29+ps_summary%0D%0AJOIN+meteor+m+ON+ps_summary.meteor_unique_trajectory_identifier+%3D+m.unique_trajectory_identifier%0D%0AORDER+BY+ps_summary.latest_created_at+DESC%0D%0ALIMIT+401%3B&p0={station_id}&p1={one_week}" target="_blank" rel="noopener noreferrer">Recently enabled ({station_id}+one other station)</a><br />
-
-</body>
-</html>
-        """, 'utf-8'))
-        self.wfile.flush()
-    
     @HandlerRegistry.register('/latest')
     def get_latest_status(self, params: Dict[str,Any]):
         mtime = self.server.last_modified
@@ -551,36 +516,3 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
 
             self.wfile.write(bytes('The requested URL was not found on this server.', 'utf-8'))
             
-    @HandlerRegistry.register('/favicon.ico')
-    def get_favicon(self, params: Dict[str,Any]):
-        filename = get_asset('/images/favicon.ico')
-        
-        if filename:
-            mtime = os.path.getmtime(filename)
-            mtime = timestamp_to_rfc2822(mtime)
-            
-            if self.headers.get('If-Modified-Since') == mtime:
-                self.send_response(304)
-                self.send_header('Last-Modified', mtime)
-                self.send_header('Cache-Control', 'max-age=600, must-revalidate')
-                self.end_headers()
-                return
-                
-            data = get_asset_data(filename)
-            
-            self.send_response(200)
-            self.send_header('Content-Type', data['content-type'])
-            if data['content-encoding'] is not None:
-                self.send_header('Content-Encoding', data['content-encoding'])
-            self.send_header('Last-Modified', data['last-modified'])
-            self.send_header('Cache-Control', 'max-age=600, must-revalidate')
-            self.end_headers()
-            
-            self.wfile.write(data['data'])
-            
-        else:
-            self.send_response(404)
-            self.send_header('Content-Type', 'text/plain')
-            self.end_headers()
-
-            self.wfile.write(bytes('The requested URL was not found on this server.', 'utf-8'))

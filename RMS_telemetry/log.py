@@ -27,14 +27,9 @@ _PENDING_CAMREA = None
 # was generated
 _LOOKBACK_BUFFER = deque([], 5)
 
-
-class MissedStartupException(RuntimeError):
-    """
-    Exception to help signal a capture is happening but the log poller has
-    missed the startup sequence.
-    """
-    
-    pass
+# State variable for processing converting the FITS file counters into a
+# filled fraction
+_EXPECTED_FITS = None
 
 
 def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, Any]:
@@ -61,6 +56,7 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
     global _CAPTURE_STARTED
     global _PENDING_CAMREA
     global _LOOKBACK_BUFFER
+    global _EXPECTED_FITS
     
     if not data:
         data = {'capture': {},
@@ -148,9 +144,6 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 data['capture']['n_frames_dropped'] = ndropped
                 data['capture']['updated'] = dt
                 
-                if not _CAPTURE_STARTED:
-                    raise MissedStartupException("Blocks coming in but capture started flag has not been set")
-                    
         elif mod == 'VideoExtraction':
             if message.find('frames are all white') != -1:
                 data['capture']['latest_all_white'] = dt
@@ -226,7 +219,13 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                     data['camera']['astrometry_good'] = _PENDING_CAMREA['astrometry_good']
                     _PENDING_CAMREA = None
                 data['camera']['photometry_good'] = value
-                
+            elif param.startswith('total_expected_fits'):
+                _EXPECTED_FITS = value
+            elif params.startswith('total_fits'):
+                if _EXPECTED_FITS is not None:
+                    data['camera']['fits_fill'] = value / _EXPECTED_FITS * 100.0
+                    _EXPECTED_FITS = None
+                    
             if _LOOKBACK_BUFFER:
                 data['camera']['updated'] = _LOOKBACK_BUFFER[-1]
                 
