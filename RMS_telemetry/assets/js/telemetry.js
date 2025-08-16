@@ -14,7 +14,7 @@ function updateStatus(response, status, xhr) {
       var tNow = new Date();
       var until = (tNow.getTime() - tStart.getTime()) / 1000;
       var h = Math.floor(until / 3600);
-      var m = Math.floor(util / 60) % 60;
+      var m = Math.floor(until / 60) % 60;
       var msg = ''
       if( h > 0 ) {
         if( m > 45) {
