@@ -104,7 +104,8 @@ function fetchPrevious() {
 
 function updateHistory(response, status, xhr) {
   var contents = '';
-  for(var date in response) {
+  for(var idx in response) {
+    var date = response[idx];
     var date_str = date.slice(0,4) + "-" + date.slice(4,2) + "-" + date.slice(6,2);
     var entry = date_str;
     entry += '<a href="/latest?date=' + date + '>Detailed Status</a>';
@@ -112,7 +113,7 @@ function updateHistory(response, status, xhr) {
     contents += entry;
   }
   
-  var dv = document.getElementById('history');
+  var dv = document.getElementById('history_listing');
   if( dv != null ) {
     dv.innerHTML = contents;
     dv.classList.remove('loading');
