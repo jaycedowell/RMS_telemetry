@@ -66,20 +66,15 @@ function updateLinks(response, status, xhr) {
   }
 }
 
-var lastLatest = 'Thu, 01 Jan 1970 00:00:00';
-
 function fetchLatest() {
   $.ajax({'url': '/latest',
           'success': function(response, status, xhr) {
             updateStatus(response, status, xhr);
             updateLinks(response, status, xhr);
-            lastLatest = xhr.getResponseHeader('Last-Modified');
             setTimeout(fetchLatest, 30000);
           },
           'error': function() {
             setTimeout(fetchLatest, 30000);
-          },
-          'headers': {'If-Modified-Since': lastLatest
           }
          });
 }
@@ -115,19 +110,14 @@ function updatePrevious(response, status, xhr) {
   }
 }
 
-var lastPrevious = 'Thu, 01 Jan 1970 00:00:00';
-
 function fetchPrevious() {
   $.ajax({'url': '/previous',
           'success': function(response, status, xhr) {
             updatePrevious(response, status, xhr);
-            lastPrevious = xhr.getResponseHeader('Last-Modified');
             setTimeout(fetchPrevious, 900000);
           },
           'error': function() {
             setTimeout(fetchPrevious, 900000);
-          },
-          'headers': {'If-Modified-Since': lastPrevious
           }
          });
 }
@@ -150,19 +140,14 @@ function updateHistory(response, status, xhr) {
   }
 }
 
-var lastHistory = 'Thu, 01 Jan 1970 00:00:00';
-
 function fetchHistory() {
   $.ajax({'url': '/previous/dates',
           'success': function(response, status, xhr) {
             updateHistory(response, status, xhr);
-            lastHistory = xhr.getResponseHeader('Last-Modified');
             setTimeout(fetchHistory, 900000);
           },
           'error': function() {
             setTimeout(fetchHistory, 900000);
-          },
-          'headers': {'If-Modified-Since': lastHistory
           }
          });
 }
