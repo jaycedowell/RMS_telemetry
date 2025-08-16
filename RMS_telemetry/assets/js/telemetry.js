@@ -10,7 +10,7 @@ function updateStatus(response, status, xhr) {
     if( response['capture']['running'] ) {
       sp.innerHTML = 'active'
     } else {
-      sp.innerHTML 'waiting for next start at '+response['capture']['next_start'];
+      sp.innerHTML = 'waiting for next start at ' + response['capture']['next_start'];
     }
   }
 }
