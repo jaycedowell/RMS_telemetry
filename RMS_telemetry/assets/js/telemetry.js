@@ -10,7 +10,7 @@ function updateStatus(response, status, xhr) {
     if( response['capture']['running'] ) {
       sp.innerHTML = 'active'
     } else {
-      var tStart = new Date(response['capture']['next_start'].slice(0,19));
+      var tStart = new Date(response['capture']['next_start']);
       var tNow = new Date();
       var until = (tStart.getTime() - tNow.getTime()) / 1000;
       var h = Math.floor(until / 3600);
@@ -22,7 +22,7 @@ function updateStatus(response, status, xhr) {
         } else if (m > 15) {
           msg = 'about ' + h.toString() + ' hr, 30 min';
         } else {
-          msg = 'about ' + h.toString();
+          msg = 'about ' + h.toString() + ' hr';
         }
       } else if( m > 1 ) {
         msg = 'about ' + m.toString() +' min';
@@ -76,9 +76,12 @@ function date_to_rfc2822(dt) {
                    hour: '2-digit',
                    minute: '2-digit',
                    second: '2-digit',
-                   timeZoneName: 'shortOffset'
+                   hour12: false,
+                   timeZone: "UTC"
                   };
-   return new Intl.DateTimeFormat('en-US', options).format(dt);
+   var rfc2822 = new Intl.DateTimeFormat('en-US', options).format(dt);
+   var parts = rfc2822.replaceAll(',', '').split(' ');
+   return parts[0] + ', ' + parts[2] + ' ' + parts[1] + ' ' + parts[3] + ' ' + parts[4];
 }
 
 function fetchLatest() {
@@ -86,7 +89,7 @@ function fetchLatest() {
           'success': function(response, status, xhr) {
             updateStatus(response, status, xhr);
             updateLinks(response, status, xhr);
-            lastLatest = new Date();
+            lastLatest = xhr['Last-Modified']
             setTimeout(fetchLatest, 30000);
           },
           'error': function() {
