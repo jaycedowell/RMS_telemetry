@@ -59,6 +59,50 @@ function fetchLatest() {
          });
 }
 
+function updatePrevious(response, status, xhr) {
+  var sp = document.getElementById('last_capture');
+  if( sp != null ) {
+    sp.innerHTML = response['capture']['started'];
+    sp.classList.remove("loading");
+  }
+  
+  var astr_ok = response['camera']['astrometry_good'];
+  var phot_ok = response['camera']['photometry_good'];
+  var msg = '';
+  if( astr_ok && phot_ok ) {
+    msg = 'OK';
+  } else if( astr_ok && !phot_ok ) {
+    msg = 'photometry failed';
+  } else if( !astr_ok && phot_ok ) {
+    msg = 'astrometry failed';
+  } else {
+    msg = "astrometry and photometry failed";
+  }
+  sp = document.getElementById('last_overall');
+  if( sp != null ) {
+    sp.innerHTML = msg;
+    if( msg === 'OK' ) {
+      sp.classList.remove('error');
+    } else {
+      sp.classList.add('error');
+    }
+    sp.classList.remove('loading');
+  }
+}
+
+function fetchPrevious() {
+  $.ajax({'url': '/previous',
+          'success': function(response, status, xhr) {
+            updatePrevious(response, status, xhr);
+            setTimeout(fetchLatest, 900000);
+          },
+          'error': function() {
+            setTimeout(fetchLatest, 900000);
+          }
+         });
+}
+
 function initializePage() {
   fetchLatest();
+  fetchPrevious();
 }
