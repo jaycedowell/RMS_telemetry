@@ -12,6 +12,7 @@ function updateStatus(response, status, xhr) {
     } else {
       sp.innerHTML = 'waiting for next start at ' + response['capture']['next_start'];
     }
+    sp.classList.remove("loading");
   }
 }
 
@@ -49,7 +50,7 @@ function fetchLatest() {
   $.ajax({'url': '/latest',
           'success': function(response, status, xhr) {
             updateStatus(response, status, xhr);
-            updateLinks(response, station, xhr);
+            updateLinks(response, status, xhr);
             setTimeout(fetchLatest, 30000);
           },
           'error': function() {
