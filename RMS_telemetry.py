@@ -112,7 +112,7 @@ if __name__ == "__main__":
                 
                 with open(logcurr, 'r') as fh:
                     fh.seek(last_logpos, 0)
-                    last_logpos = os.path.getsize()
+                    last_logpos = os.path.getsize(logcurr)
                     
                     for line in fh:
                         data = parse_log_line(line, data=data)
