@@ -85,7 +85,7 @@ def datetime_to_rfc2822(dt: datetime) -> str:
     Convert a datetime instance into a RFC2822 time.
     """
     
-    return dt.strftime('%a, %d %b %Y %X %z')
+    return dt.strftime('%a, %d %b %Y %X %z').strip()
 
 
 def timestamp_to_rfc2822(ts: Union[int,float]) -> str:
