@@ -106,10 +106,10 @@ function updateHistory(response, status, xhr) {
   var contents = '';
   for(var idx in response) {
     var date = response[idx];
-    var date_str = date.slice(0,4) + "-" + date.slice(4,2) + "-" + date.slice(6,2);
+    var date_str = date.slice(0,4) + "-" + date.slice(4,6) + "-" + date.slice(6,8);
     var entry = date_str;
-    entry += '<a href="/latest?date=' + date + '>Detailed Status</a>';
-    entry += ' <a href=/latest/image?date=' + date + '>Stacked Meteors Image</a><br />';
+    entry += ' - <a href="/latest?date=' + date + '>Detailed Status</a>';
+    entry += ' - <a href=/latest/image?date=' + date + '>Stacked Meteors Image</a><br />';
     contents += entry;
   }
   
