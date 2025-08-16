@@ -112,14 +112,12 @@ if __name__ == "__main__":
                 
                 with open(logcurr, 'r') as fh:
                     fh.seek(last_logpos, 0)
-                    open_size = os.path.getsize(logcurr)
+                    last_logpos = os.path.getsize()
                     
                     for line in fh:
                         data = parse_log_line(line, data=data)
-                        last_logpos = fh.tell()
-                        if last_logpos >= open_size:
-                            break
-                            
+                    last_logpos = fh.tell()
+                    
                 ### Update
                 server.set_data(data)
                 
