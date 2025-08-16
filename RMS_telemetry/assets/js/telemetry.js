@@ -94,10 +94,39 @@ function fetchPrevious() {
   $.ajax({'url': '/previous',
           'success': function(response, status, xhr) {
             updatePrevious(response, status, xhr);
-            setTimeout(fetchLatest, 900000);
+            setTimeout(fetchPrevious, 900000);
           },
           'error': function() {
-            setTimeout(fetchLatest, 900000);
+            setTimeout(fetchPrevious, 900000);
+          }
+         });
+}
+
+function updateHistory(response, status, xhr) {
+  var contents = '';
+  for(var date in response) {
+    var date_str = date.slice(0,4) + "-" + date.slice(4,2) + "-" + date.slice(6,2);
+    var entry = date_str;
+    entry += '<a href="/latest?date=' + date + '>Detailed Status</a>';
+    entry += ' <a href=/latest/image?date=' + date + '>Stacked Meteors Image</a><br />';
+    contents += entry;
+  }
+  
+  var dv = document.getElementById('history');
+  if( dv != null ) {
+    dv.innerHTML = contents;
+    dv.classList.remove('loading');
+  }
+}
+
+function fetchHistory() {
+  $.ajax({'url': '/previous/dates',
+          'success': function(response, status, xhr) {
+            updateHistory(response, status, xhr);
+            setTimeout(fetchHistory, 900000);
+          },
+          'error': function() {
+            setTimeout(fetchHistory, 900000);
           }
          });
 }
@@ -105,4 +134,5 @@ function fetchPrevious() {
 function initializePage() {
   fetchLatest();
   fetchPrevious();
+  fetchHistory();
 }
