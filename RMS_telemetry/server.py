@@ -425,7 +425,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
     def get_previous_radiants(self, params: Dict[str,Any]):
         date = None
         if 'date' in params:
-            date = params['date']
+            date = str(params['date'])
             
         filename = get_radiants(self.server.log_dir, date=date)
         if filename is None:
@@ -456,7 +456,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
     def get_previous_image(self, params: Dict[str,Any]):
         date = None
         if 'date' in params:
-            date = params['date']
+            date = str(params['date'])
             
         filename = get_stack(self.server.log_dir, date=date)
         if filename is None:
