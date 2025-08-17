@@ -57,6 +57,7 @@ if __name__ == "__main__":
     
     last_logfile = ''
     last_logpos = 0
+    data = server.get_data()
     while lognames:
         last_logfile = logcurr = lognames[0]
         lognames = lognames[1:]
@@ -68,8 +69,6 @@ if __name__ == "__main__":
         
         code = os.path.basename(logcurr)
         _, code, _ = code.split('_', 2)
-        
-        data = server.get_data()
         data['station_id'] = code
         
         with open(logcurr, 'r') as fh:
@@ -78,6 +77,9 @@ if __name__ == "__main__":
                     data = parse_log_line(line, data=data)
                 except Exception as e:
                     print(f"WARNING: failed to parse log '{os.path.basename(logcurr)}': {str(e)}")
+                if 'end_of_day' in data:
+                    server.set_data(data)
+                    data = server.get_data()
             last_logpos = fh.tell()
             
         server.set_data(data)
