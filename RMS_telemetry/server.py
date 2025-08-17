@@ -107,7 +107,7 @@ class TelemetryServer(ThreadingHTTPServer):
                 if data_obj['end_of_day']:
                     self._previous_data.append(copy.deepcopy(self._data))
                     try:
-                        updated = max([self._data[key]['updated'] for key in ('capture', 'detections', 'camera', 'disk') if key in self._data])
+                        updated = max([self._data[key]['updated'] for key in ('capture', 'detections', 'camera', 'disk') if key in self._data and 'updated' in self._data[key]])
                     except ValueError:
                         updated = _DUMMY_TIME
                     updated = iso_to_timestamp(updated)
