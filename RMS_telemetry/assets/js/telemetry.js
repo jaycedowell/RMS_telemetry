@@ -115,8 +115,10 @@ function updatePrevious(response, status, xhr) {
     sp.innerHTML = msg;
     if( all_ok ) {
       sp.classList.remove('error');
+      sp.classList.add('ok');
     } else {
       sp.classList.add('error');
+      sp.classList.remove('ok');
     }
     sp.classList.remove('loading');
   }
