@@ -88,20 +88,32 @@ function updatePrevious(response, status, xhr) {
   
   var astr_ok = response['camera']['astrometry_good'];
   var phot_ok = response['camera']['photometry_good'];
-  var msg = '';
-  if( astr_ok && phot_ok ) {
-    msg = 'OK';
-  } else if( astr_ok && !phot_ok ) {
-    msg = 'photometry failed';
-  } else if( !astr_ok && phot_ok ) {
-    msg = 'astrometry failed';
-  } else {
-    msg = "astrometry and photometry failed";
+  var jitr_ok = (response['camera']['jitter_quality'] > 0.95) ? true : false;
+  var fits_ok = (response['camera']['fits_fill'] > 0.95) ? true : false;
+  
+  var all_ok = astr_ok && phot_ok && jitr_ok && fits_ok;
+  var failures = [];
+  if( !astr_ok ) {
+    failures.push('astrometry failed');
   }
+  if( !phot_ok ) {
+    failures.push('photometry failed');
+  }
+  if( !jitr_ok ) {
+    failures.push('jitter quality low');
+  }
+  if( !fits_ok ) {
+    failures.push('FITS fill fraction low');
+  }
+  var msg = 'OK';
+  if( failures.length > 0 ) {
+    msg = failures.join(', ');
+  }
+  
   sp = document.getElementById('last_overall');
   if( sp != null ) {
     sp.innerHTML = msg;
-    if( msg === 'OK' ) {
+    if( all_ok ) {
       sp.classList.remove('error');
     } else {
       sp.classList.add('error');
