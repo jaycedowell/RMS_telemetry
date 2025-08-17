@@ -86,6 +86,8 @@ function updatePrevious(response, status, xhr) {
     sp.classList.remove("loading");
   }
   
+  var n_meteor = response['detections']['n_meteor_final'];
+  
   var astr_ok = response['camera']['astrometry_good'];
   var phot_ok = response['camera']['photometry_good'];
   var jitr_ok = (response['camera']['jitter_quality'] > 0.95) ? true : false;
@@ -105,7 +107,7 @@ function updatePrevious(response, status, xhr) {
   if( !fits_ok ) {
     failures.push('FITS fill fraction low');
   }
-  var msg = 'OK';
+  var msg = 'OK with ' + n_meteor.toString() + ' meteors';
   if( failures.length > 0 ) {
     msg = failures.join(', ');
   }
