@@ -40,15 +40,15 @@ if __name__ == "__main__":
         
     # Setup the server
     server = TelemetryServer(args.ip, args.port, args.log_dir)
-    data = server.get_data()
-    sys_data = server.get_system_data()
     
     # Load in the system, memory, network, and disk info
     tSys = tMem = tNet = tDisk = time.time()
+    sys_data = server.get_system_data()
     sys_data['system'] = get_system_info(args.log_dir)
     sys_data['memory'] = get_memory_info(args.log_dir)
     sys_data['network'] = get_network_info(args.log_dir)
     sys_data['disk'] = get_disk_info(args.log_dir)
+    server.set_system_data(sys_data)
     
     # Load in the old logs
     t0 = time.time()
@@ -60,30 +60,31 @@ if __name__ == "__main__":
     while lognames:
         last_logfile = logcurr = lognames[0]
         lognames = lognames[1:]
-        if len(lognames) > 6:
+        if len(lognames) > 7:
             print(f"Skipping log '{os.path.basename(logcurr)}'...")
-        else:
-            print(f"Parsing log '{os.path.basename(logcurr)}'...")
+            continue
+        
+        print(f"Parsing log '{os.path.basename(logcurr)}'...")
+        
+        code = os.path.basename(logcurr)
+        _, code, _ = code.split('_', 2)
+        
+        data = server.get_data()
+        data['station_id'] = code
+        
+        with open(logcurr, 'r') as fh:
+            for line in fh:
+                try:
+                    data = parse_log_line(line, data=data)
+                except Exception as e:
+                    print(f"WARNING: failed to parse log '{os.path.basename(logcurr)}': {str(e)}")
+            last_logpos = fh.tell()
             
-            code = os.path.basename(logcurr)
-            _, code, _ = code.split('_', 2)
-            data['station_id'] = code
-            
-            with open(logcurr, 'r') as fh:
-                for line in fh:
-                    try:
-                        data = parse_log_line(line, data=data)
-                    except Exception as e:
-                        print(f"WARNING: failed to parse log '{os.path.basename(logcurr)}': {str(e)}")
-                last_logpos = fh.tell()
-                
-            server.set_data(data)
-            
+        server.set_data(data)
+        
     # Now that we've loaded what we can, start the server
-    server.set_data(data)
-    server.set_system_data(sys_data)
     server.run()
-
+    
     print(f"Started server on {server.ip}, port {server.port}")
     print("Press ctrl-C to exit")
     try:
@@ -121,12 +122,6 @@ if __name__ == "__main__":
                 ### Update
                 server.set_data(data)
                 
-                try:
-                    n_lines_parse = n_lines_parse_old
-                    del n_lines_parse_old
-                except NameError:
-                    pass
-                    
                 ## Part 2 - System info
                 ### Poll what needs to be polled
                 new_sys_data = {}
