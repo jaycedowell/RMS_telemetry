@@ -1,4 +1,8 @@
 function updateStatus(response, status, xhr) {
+  if( document.title === 'RMS_telemetry' ) {
+    document.title = response['station_id'];
+  }
+  
   var sp = document.getElementById('station_id');
   if( sp != null ) {
     sp.innerHTML = response['station_id'];
