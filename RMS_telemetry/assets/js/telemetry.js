@@ -113,7 +113,7 @@ function updatePrevious(response, status, xhr) {
   }
   var msg = 'OK with ' + n_meteor.toString() + ' meteors';
   if( failures.length > 0 ) {
-    msg = failures.join(', ');
+    msg = 'FAILED with ' + (failures.join(', '));
   }
   
   sp = document.getElementById('last_overall');
