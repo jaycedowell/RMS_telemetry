@@ -47,8 +47,8 @@ function updateLinks(response, status, xhr) {
   var last_week = new Date();
   last_week.setDate(last_week.getDate() - 7);
   var lw_str = last_week.getFullYear() + "-";
-  lw_str += (last_week.getMonth() + 1).padStart(2, '0') + "-";
-  lw_str += last_week.getDate().padStart(2, '0');
+  lw_str += String(last_week.getMonth() + 1).padStart(2, '0') + "-";
+  lw_str += String(last_week.getDate()).padStart(2, '0');
   
   var ln = document.getElementById('weblog');
   if( ln != null ) {
