@@ -61,13 +61,17 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
     if not data:
         data = {'capture': {},
                 'detections': {},
-                'camera': {}
+                'camera': {},
+                'upload': {}
                }
-    for key in ('capture', 'detections', 'camera'):
+    for key in ('capture', 'detections', 'camera', 'upload'):
         if key not in data:
             data[key] = {}
             if key == 'detections':
                 data[key]['n_star'] = 0
+            if key == 'upload':
+                data[key]['attempted'] = []
+                data[key]['completed'] = []
                 
     mtch = _logRE.search(line)
     if mtch:
@@ -181,6 +185,18 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                     value = True
                 _PENDING_CAMREA = {'astrometry_good': value,
                                    'updated': dt}
+                
+        elif mode == 'UploadManager':
+            if message.startswith('Starting upload of'):
+                filename = os.path.basename(message.split()[-1])
+                if filename in data['upload']['attempted']:
+                    del data['upload']['attempted'][data['upload']['attempted'].index(filename)]
+                data['upload']['attempted'].append(filename)
+                data['upload']['updated'] = dt
+            elif message.startswith('Upload successful!'):
+                filename = data['upload']['attempted'].pop()
+                data['upload']['completed'].append(filename)
+                data['upload']['updated'] = dt
                 
         if llevel in ('ERROR', 'CRITICAL'):
             llevel = llevel.lower()
