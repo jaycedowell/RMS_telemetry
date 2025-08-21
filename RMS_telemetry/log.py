@@ -186,7 +186,7 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 _PENDING_CAMREA = {'astrometry_good': value,
                                    'updated': dt}
                 
-        elif mode == 'UploadManager':
+        elif mod == 'UploadManager':
             if message.startswith('Starting upload of'):
                 filename = os.path.basename(message.split()[-1])
                 if filename in data['upload']['attempted']:
