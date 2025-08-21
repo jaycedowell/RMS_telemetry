@@ -1,3 +1,4 @@
+import os
 import re
 from collections import deque
 
@@ -67,12 +68,14 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
     for key in ('capture', 'detections', 'camera', 'upload'):
         if key not in data:
             data[key] = {}
-            if key == 'detections':
+        if key == 'detections':
+            if 'n_star' not in data[key]:
                 data[key]['n_star'] = 0
-            if key == 'upload':
-                data[key]['attempted'] = []
-                data[key]['completed'] = []
-                
+        if key == 'upload':
+            for subkey in ('attempted', 'completed'):
+                if subkey not in data[key]:
+                    data[key][subkey] = []
+                    
     mtch = _logRE.search(line)
     if mtch:
         dt = f"{mtch.group('date')}T{mtch.group('time')}Z"
@@ -194,9 +197,10 @@ def parse_log_line(line: str, data: Optional[Dict[str,Any]]=None) -> Dict[str, A
                 data['upload']['attempted'].append(filename)
                 data['upload']['updated'] = dt
             elif message.startswith('Upload successful!'):
-                filename = data['upload']['attempted'].pop()
-                data['upload']['completed'].append(filename)
-                data['upload']['updated'] = dt
+                if data['upload']['attempted']:
+                    filename = data['upload']['attempted'].pop()
+                    data['upload']['completed'].append(filename)
+                    data['upload']['updated'] = dt
                 
         if llevel in ('ERROR', 'CRITICAL'):
             llevel = llevel.lower()
