@@ -30,8 +30,10 @@ function updateStatus(response, status, xhr) {
         }
       } else if( m > 1 ) {
         msg = 'about ' + m.toString() +' min';
-      } else {
+      } else if( m >= 0 ) {
         msg = '&lt1 min';
+      } else {
+        msg = "finishing up";
       }
       
       sp.innerHTML = 'waiting for next start in ' + msg;
