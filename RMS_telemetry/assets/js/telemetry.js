@@ -19,24 +19,24 @@ function updateStatus(response, status, xhr) {
       var until = (tStart.getTime() - tNow.getTime()) / 1000;
       var h = Math.floor(until / 3600);
       var m = Math.floor(until / 60) % 60;
-      var msg = ''
+      var msg = 'waiting for next start in ';
       if( h > 0 ) {
         if( m > 45) {
-          msg = 'about ' + (h+1).toString() + ' hr';
+          msg += 'about ' + (h+1).toString() + ' hr';
         } else if (m > 15) {
-          msg = 'about ' + h.toString() + ' hr, 30 min';
+          msg += 'about ' + h.toString() + ' hr, 30 min';
         } else {
-          msg = 'about ' + h.toString() + ' hr';
+          msg += 'about ' + h.toString() + ' hr';
         }
       } else if( m > 1 ) {
-        msg = 'about ' + m.toString() +' min';
+        msg += 'about ' + m.toString() +' min';
       } else if( m >= 0 ) {
-        msg = '&lt1 min';
+        msg += '&lt1 min';
       } else {
         msg = "finishing up";
       }
       
-      sp.innerHTML = 'waiting for next start in ' + msg;
+      sp.innerHTML = msg;
     }
     sp.classList.remove("loading");
   }
