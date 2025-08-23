@@ -107,7 +107,7 @@ class TelemetryServer(ThreadingHTTPServer):
                 if data_obj['end_of_day']:
                     self._previous_data.append(copy.deepcopy(self._data))
                     try:
-                        updated = max([self._data[key]['updated'] for key in ('capture', 'detections', 'camera', 'disk') if key in self._data and 'updated' in self._data[key]])
+                        updated = max([self._data[key]['updated'] for key in ('capture', 'detections', 'camera', 'upload') if key in self._data and 'updated' in self._data[key]])
                     except ValueError:
                         updated = _DUMMY_TIME
                     updated = iso_to_timestamp(updated)
@@ -124,6 +124,8 @@ class TelemetryServer(ThreadingHTTPServer):
                         data_obj['detections']['n_meteor'] = 0
                         data_obj['detections']['last_meteor'] = _DUMMY_TIME
                         data_obj['detections']['n_meteor_final'] = 0
+                        data_obj['upload']['attempted'] = []
+                        data_obj['upload']['completed'] = []
                         
                     for llevel in ('error', 'critical'):
                         if llevel in data_obj:
@@ -131,7 +133,7 @@ class TelemetryServer(ThreadingHTTPServer):
                             
             self._data = data_obj
             try:
-                updated = max([data_obj[key]['updated'] for key in ('capture', 'detections', 'camera', 'disk') if key in data_obj and 'updated' in data_obj[key]])
+                updated = max([data_obj[key]['updated'] for key in ('capture', 'detections', 'camera', 'upload') if key in data_obj and 'updated' in data_obj[key]])
             except ValueError:
                 updated = _DUMMY_TIME
             updated = iso_to_timestamp(updated)
