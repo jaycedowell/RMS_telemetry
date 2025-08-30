@@ -176,8 +176,35 @@ function fetchHistory() {
          });
 }
 
+function updateMonthlyCount(response, status, xhr) {
+  var sp = document.getElementById('monthly_count');
+  if( sp != null && response.ok ) {
+    sp.innerHTML = response['rows'][0]['COUNT(meteor_unique_trajectory_identifier)'];
+    sp.classList.remove('loading');
+  }
+}
+
+function fetchMonthlyCount() {
+  var last_month = new Date();
+  last_month.setMonth(last_month.getMonth() - 1);
+  var lm_str = last_month.getFullYear() + "-";
+  lm_str += String(last_month.getMonth() + 1).padStart(2, '0') + "-";
+  lm_str += String(last_month.getDate()).padStart(2, '0');
+  
+  $.ajax({'url': "https://explore.globalmeteornetwork.org/gmn_data_store/-/query.json?sql=select+station_code%2C+COUNT%28meteor_unique_trajectory_identifier%29+from+participating_station+where+%22station_code%22+%3D+%3Ap0+AND+created_at+%3E%3D+%3Ap1&p0=" + document.title + "&p1=" + lm_str,
+          'success': function(response, status, xhr) {
+            updateMonthlyCount(response, status, xhr);
+            setTimeout(fetchMonthlyCount, 4*3600*1000);
+          },
+          'error': function() {
+            setTimeout(fetchMonthlyCount, 1*3600*1000);
+          }
+         });
+        }
+
 function initializePage() {
   fetchLatest();
   fetchPrevious();
   fetchHistory();
+  fetchMonthlyCount();
 }
