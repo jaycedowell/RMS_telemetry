@@ -191,16 +191,20 @@ function fetchMonthlyCount() {
   lm_str += String(last_month.getMonth() + 1).padStart(2, '0') + "-";
   lm_str += String(last_month.getDate()).padStart(2, '0');
   
-  $.ajax({'url': "https://explore.globalmeteornetwork.org/gmn_data_store/-/query.json?sql=select+station_code%2C+COUNT%28meteor_unique_trajectory_identifier%29+from+participating_station+where+%22station_code%22+%3D+%3Ap0+AND+created_at+%3E%3D+%3Ap1&p0=" + document.title + "&p1=" + lm_str,
-          'success': function(response, status, xhr) {
-            updateMonthlyCount(response, status, xhr);
-            setTimeout(fetchMonthlyCount, 4*3600*1000);
-          },
-          'error': function() {
-            setTimeout(fetchMonthlyCount, 1*3600*1000);
-          }
-         });
-        }
+  if( document.title !== 'RMS_telemetry' ) {
+    $.ajax({'url': "https://explore.globalmeteornetwork.org/gmn_data_store/-/query.json?sql=select+station_code%2C+COUNT%28meteor_unique_trajectory_identifier%29+from+participating_station+where+%22station_code%22+%3D+%3Ap0+AND+created_at+%3E%3D+%3Ap1&p0=" + document.title + "&p1=" + lm_str,
+            'success': function(response, status, xhr) {
+              updateMonthlyCount(response, status, xhr);
+              setTimeout(fetchMonthlyCount, 4*3600*1000);
+            },
+            'error': function() {
+              setTimeout(fetchMonthlyCount, 1*3600*1000);
+            }
+           });
+  } else {
+    setTimeout(fetchMonthlyCount, 5*1000);
+  }
+}
 
 function initializePage() {
   fetchLatest();
