@@ -488,11 +488,13 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         self.wfile.flush()
         
     @HandlerRegistry.register('/previous/details')
-    def get_previous_details(self, req: str, params: Dict[str,Any]):
+    def get_previous_details(self, params: Dict[str,Any]):
         date = None
         if 'date' in params:
             date = str(params['date'])
             
+        mtime = self.server.previous_last_modified
+        
         data = self.server.get_previous_data(date=date)
         if data is None:
             raise URLNotFoundError()
