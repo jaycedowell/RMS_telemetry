@@ -151,6 +151,7 @@ def get_shower_details(log_dir: str, date: Optional[str]=None) -> Optional[List[
                     ra2, dec2 = float(fields[6]), float(fields[7])
                     mag = float(fields[-3])
                     entry = {'date': f"{date[:4]}-{date[4:6]}-{date[6:8]}T{date[9:]}",
+                             'timestamp': 0.0,
                              'start_jd': jd,
                              'sol': sol,
                              'shower': shwr,
@@ -158,6 +159,7 @@ def get_shower_details(log_dir: str, date: Optional[str]=None) -> Optional[List[
                              'stop_radec': (ra2, dec2),
                              'mag': mag
                             }
+                    entry['timestamp'] = iso_to_timestamp(entry['date'])
                     radiants_data.append(entry)
                     
     return radiants_data
@@ -203,6 +205,7 @@ def get_meteor_details(log_dir: str, date: Optional[str]=None) -> Optional[List[
                     ra1, dec1 = float(fields[13]), float(fields[14])
                     ra2, dec2 = float(fields[15]), float(fields[16])
                     entry = {'date': f"{y:04d}-{m:02d}-{d:02d}T{h:02d}:{i:02d}:{s:09.6f}",
+                             'timestamp': 0.0,
                              'mag': mag,
                              'dur': dur,
                              'start_azalt': (az1, alt1),
@@ -211,9 +214,10 @@ def get_meteor_details(log_dir: str, date: Optional[str]=None) -> Optional[List[
                              'stop_radec': (ra2, dec2),
                              'shower': 'unknown'
                             }
+                    entry['timestamp'] = iso_to_timestamp(entry['date'])
                     if shower_details is not None:
                         for meteor in shower_details:
-                            if meteor['date'].startswith(entry['date'][:21]) \
+                            if abs(meteor['timestamp'] - entry['timestamp']) < 0.25
                                and meteor['mag'] == entry['mag']:
                                 entry['shower'] = meteor['shower']
                                 break
