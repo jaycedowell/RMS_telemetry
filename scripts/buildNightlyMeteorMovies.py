@@ -1,5 +1,5 @@
 """
-RMS-compatile external script for converting nightly FITS files into movies for
+RMS-compatible external script for converting nightly FITS files into movies for
 RMS_telemetry.
 """
 
