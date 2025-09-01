@@ -12,6 +12,7 @@ from urllib.parse import unquote_plus
 
 from .static import get_asset, get_asset_data
 from .images import get_radiants, get_stack, get_image, get_image_data
+from .data import get_meteor_details
 from .utils import timestamp_to_iso, iso_to_timestamp, timestamp_to_rfc2822, get_archive_dir
 from .system import *
 
@@ -484,6 +485,30 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         self.end_headers()
         
         self.wfile.write(data['data'])
+        self.wfile.flush()
+        
+    @HandlerRegistry.register('/previous/details')
+    def get_previous_details(self, req: str, params: Dict[str,Any]):
+        date = None
+        if 'date' in params:
+            date = str(params['date'])
+            
+        data = self.server.get_previous_data(date=date)
+        if data is None:
+            raise URLNotFoundError()
+            
+        date = data['capture']['started'][:10].replace('-', '')
+        data = get_meteor_details(self.server.log_dir, date=date)
+        if data is None:
+            raise URLNotFoundError()
+            
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Last-Modified', mtime)
+        self.send_header('Cache-Control', 'max-age=300, must-revalidate')
+        self.end_headers()
+
+        self.wfile.write(bytes(json.dumps(data), "utf-8"))
         self.wfile.flush()
         
     def get_static_asset(self, req: str, params: Dict[str,Any]):
