@@ -217,7 +217,7 @@ def get_meteor_details(log_dir: str, date: Optional[str]=None) -> Optional[List[
                     entry['timestamp'] = iso_to_timestamp(entry['date'])
                     if shower_details is not None:
                         for meteor in shower_details:
-                            if abs(meteor['timestamp'] - entry['timestamp']) < 0.25
+                            if abs(meteor['timestamp'] - entry['timestamp']) < 0.25 \
                                and meteor['mag'] == entry['mag']:
                                 entry['shower'] = meteor['shower']
                                 break
