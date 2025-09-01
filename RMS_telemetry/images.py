@@ -17,7 +17,8 @@ from .utils import get_archive_dir, get_frames_dir, timestamp_to_rfc2822, timed_
 
 from typing import Optional, Dict, Any
 
-__all__ = ['get_radiants', 'get_stack', 'get_image', 'get_image_data']
+__all__ = ['get_radiants', 'get_stack', 'get_image', 'get_image_data', 'get_fits_data',
+           'fits_to_movie']
 
 
 @timed_lru_cache(seconds=300)
@@ -109,6 +110,43 @@ def get_image_data(filename: str) -> Dict[str,Any]:
     return data
 
 
+@timed_lru_cache(seconds=300)
+def get_fits_data(filename: str) -> Dict[str,Any]:
+    """
+    Given a filename that points to a FITS image, load the MAXPIX frame, convert
+    it to PNG, and return a dictionary containing the image content type and
+    data.  Returns and empty dictionary if the file doesn't exist or if there
+    was an error converting the image.
+    """
+    
+    data = {}
+    if os.path.exists(filename):
+        tempdir = tempfile.mkdtemp()
+        
+        try:
+            fits = astrofits(filename)
+            maxpix = fits[1].data
+            
+            fig = plt.figure()
+            ax = fig.gca()
+            ax.clear()
+            ax.imshow(maxpix, cmap='gray')
+            ax.axis('off')
+            plt.draw()
+            fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+            plt.savefig(os.path.join(tempdir, 'frame.png'), bbox_inches='tight')
+            
+            data = get_image_data(os.path.join(tempdir, 'frame.png'))
+            
+        except Exception as e:
+            data = {}
+            
+        finally:
+            shutil.rmtree(tempdir)
+            
+    return data
+
+
 def fits_to_movie(filename: str, persist: bool=False) -> Optional[str]:
     """
     Given the name of a FITS file, convert it into a movie and return the
@@ -141,7 +179,7 @@ def fits_to_movie(filename: str, persist: bool=False) -> Optional[str]:
                     else:
                         frame = np.where(maxfrm == i, maxpix, avgpix)
                     ax.clear()
-                    ax.imshow(background, cmap='gray')
+                    ax.imshow(frame, cmap='gray')
                     ax.axis('off')
                     plt.draw()
                     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
