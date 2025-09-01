@@ -178,8 +178,9 @@ class TelemetryServer(ThreadingHTTPServer):
                     return self._previous_data[-1]
                 else:
                     for entry in self._previous_data:
-                        if entry['capture']['started'].replace('-', '').startswith(date):
-                            return entry
+                        if 'capture' in entry and 'started' in entry['capture']:
+                            if entry['capture']['started'].replace('-', '').startswith(date):
+                                return entry
         return None
         
     def set_system_data(self, data_obj: Dict[str,Any]):
