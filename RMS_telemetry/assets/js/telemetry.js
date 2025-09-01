@@ -12,7 +12,7 @@ function updateStatus(response, status, xhr) {
   sp = document.getElementById('capture_active');
   if( sp != null ) {
     if( response['capture']['running'] ) {
-      sp.innerHTML = 'active'
+      sp.innerHTML = 'active with ' + response['capture']['n_start'].toString() + ' stars and ' + response['capture']['n_meteor'].toString() + ' meteors';
     } else {
       var tStart = new Date(response['capture']['next_start']);
       var tNow = new Date();
