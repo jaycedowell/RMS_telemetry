@@ -2,12 +2,13 @@ import os
 import glob
 import json
 
-from .utils import get_archive_dir, timed_lru_cache
+from .utils import iso_to_timestamp, get_archive_dir, timed_lru_cache
 
 from typing import Optional, Dict, Any, List
 
 __all__ = ['get_established_showers', 'get_shower_breakdown', 'get_shower_details',
-           'get_meteor_details', 'get_observation_summary']
+           'get_meteor_details', 'get_observation_summary', 'get_fits_listing',
+           'get_meteor_fits_file']
 
 
 def get_established_showers() -> Dict[str,Dict[str,Any]]:
@@ -275,3 +276,49 @@ def get_observation_summary(log_dir: str, date: Optional[str]=None) -> Optional[
                 obs_data = json.load(fh)
                 
     return obs_data
+
+
+@timed_lru_cache(seconds=3600)
+def get_fits_listing(log_dir: str, date: Optional[str]=None) -> Optional[List[str]]:
+    """
+    Given a path to location of the RMS logs and, optionally a date in YYYYMMDD
+    format, return a list of FITS files.  If a date is not provided then the
+    most recent listing is returned.  Returns None if there are not FITS files.
+    """
+    
+    data_dir = get_archive_dir(log_dir, date=date)
+    
+    fits_list = None
+    if data_dir:
+        fits_list = os.path.join(data_dir, 'FF_*.fits')
+        fits_list = glob.glob(fits_list)
+        fits_list.sort()
+        if len(fits_list) == 0:
+            fits_list = None
+            
+    return fits_list
+
+
+@timed_lru_cache(seconds=3600)
+def get_meteor_fits_file(log_dir: str, datetime: str) -> Optional[str]:
+    """
+    Given a path to location of the RMS logs and a ISO8601 date/time for a
+    meteor, return the filename of the associated FF FITS file.  Returns None
+    if the FITS file does not exist or cannot be determined.
+    """
+    
+    meteor_time = iso_to_timestamp(datetime)
+    fits_list = get_fits_listing(log_dir, date=datetime[:10].replace('-', ''))
+    
+    fits_image = None
+    for filename in fits_list:
+        _, _, date, time, ms, _ = os.path.basename(filename).split('_', 5)
+        fits_time = f"{date[:4]}-{date[4:6]}-{date[6:8]}T{time[:2]}:{time[2:4]}:{time[4:6]}.{ms}"
+        fits_time = iso_to_timestamp(fits_time)
+        
+        if fits_time <= meteor_time:
+            fits_image = filename
+        else:
+            break
+            
+    return fits_image 
