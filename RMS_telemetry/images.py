@@ -1,6 +1,17 @@
 import os
 import glob
+import numpy as np
+import shutil
+import tempfile
 import mimetypes
+import subprocess
+
+from astropy.io import fits as astrofits
+
+import matplotlib
+matplotlib.use('Agg')
+matplotlib.rcParams['savefig.pad_inches'] = 0
+from matplotlib import pyplot as plt
 
 from .utils import get_archive_dir, get_frames_dir, timestamp_to_rfc2822, timed_lru_cache
 
@@ -96,3 +107,55 @@ def get_image_data(filename: str) -> Dict[str,Any]:
             data['data'] = fh.read()
             
     return data
+
+
+def fits_to_movie(filename: str, persist: bool=False) -> Optional[str]:
+    """
+    Given the name of a FITS file, convert it into a movie and return the
+    filename of that movie.  If the FITS file does not exist or the movie
+    cannot be created None is returned instead.
+    
+    .. note:: The `persist` keyword changes the movie style to max hold so that
+              the meteor trail persists until the end of the video.
+    """
+    
+    mp4name = None
+    if os.path.exists(filename):
+        tempdir = tempfile.mkdtemp()
+        
+        try:
+            mp4name = filename.replace('.fits', '.mp4')
+            if not os.path.exists(mp4name):
+                fits = astrofits(filename)
+                nframe = fits[0].header['NFRAMES']
+                maxpix = fits[1].data
+                maxfrm = fits[2].data
+                avgpix = fits[3].data
+                stdpix = fits[4].data
+                
+                fig = plt.figure()
+                ax = fig.gca()
+                for i in range(nframe):
+                    if persist:
+                        frame = np.where(maxfrm <= i, maxpix, avgpix)
+                    else:
+                        frame = np.where(maxfrm == i, maxpix, avgpix)
+                    ax.clear()
+                    ax.imshow(background, cmap='gray')
+                    ax.axis('off')
+                    plt.draw()
+                    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+                    plt.savefig(os.path.join(tempdir, f"frame_{i:03d}.png"), bbox_inches='tight')
+                    
+                subprocess.check_call(['ffmpeg', '-i', os.path.join(tempdir, 'frame_%003d.png'),
+                                       '-framerate', '25', '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
+                                       mp4name])
+                
+        except Exception as e:
+            print(f"WARNING: failed to convert FITS file to movie: {str(e)}")
+            mp4name = None
+            
+        finally:
+            shutil.rmtree(tempdir)
+            
+    return mp4name
