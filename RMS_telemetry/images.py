@@ -124,7 +124,7 @@ def get_fits_data(filename: str) -> Dict[str,Any]:
         tempdir = tempfile.mkdtemp()
         
         try:
-            fits = astrofits(filename)
+            fits = astrofits.open(filename)
             maxpix = fits[1].data
             
             fig = plt.figure()
@@ -164,7 +164,7 @@ def fits_to_movie(filename: str, persist: bool=False) -> Optional[str]:
         try:
             mp4name = filename.replace('.fits', '.mp4')
             if not os.path.exists(mp4name):
-                fits = astrofits(filename)
+                fits = astrofits.open(filename)
                 nframe = fits[0].header['NFRAMES']
                 maxpix = fits[1].data
                 maxfrm = fits[2].data
