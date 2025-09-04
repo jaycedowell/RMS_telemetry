@@ -31,7 +31,7 @@
     
     var parts = window.location.href.split("?");
     if( parts.length == 2) {
-      url += parts[1];
+      url += '?' + parts[1];
     }
     
     $.ajax({'url': url,
