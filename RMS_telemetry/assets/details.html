@@ -5,18 +5,19 @@
   <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/font/font-awesome.min.css">
-  <script type="javascript">
-  def updateListing(response, status, xhr) {
+  <script type="text/javascript">
+  function updateListing(response, status, xhr) {
     var tbl = document.getElementById('listing');
     if( tbl != null ) {
       var contents = '<thead><tr><th>Date</th><th>Magnitude</th><th>Duration</th><th>Shower</th><th>Link</th></thead>';
       contents += '<tbody>';
-      for(let i=0; i<response.length, i++) {
-        contents += '<tr><td>' + response[i]['date'] + '</td>';
-        contents += '<td>' + response[i]['mag'].toString() + '</td>';
-        contents += '<td>' + response[i]['dur'].toString() + ' s</td>';
-        contents += '<td>' + response[i]['shower'] + '</td>';
-        contents += '<td><a href="/previous/meteor?date=' + response[i]['date'] + '>Image</a></td></tr>';
+      for(var idx in response) {
+        var entry = response[idx];
+        contents += '<tr><td>' + entry['date'] + '</td>';
+        contents += '<td>' + entry['mag'].toString() + '</td>';
+        contents += '<td>' + entry['dur'].toString() + ' s</td>';
+        contents += '<td>' + entry['shower'] + '</td>';
+        contents += '<td><a href="/previous/meteor?date=' + entry['date'] + '>Image</a></td></tr>';
       }
       contents += '</tbody>';
     }
@@ -24,7 +25,7 @@
     tbl.innerHTML = contents;
   }
   
-  def fetchListing() {
+  function fetchListing() {
     var url = '/previous/details'
     
     var parts = window.location.href.split("?");
@@ -41,12 +42,9 @@
             }
            });
   }
-  def onLoad() {
-    fetchListing();
-  }
   </script>
 </head>
-<body onload="onLoad();">
+<body onload="fetchListing();">
   <table id="listing"></table>
 </body>
 </html>
