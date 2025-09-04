@@ -282,6 +282,8 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             req = '/index.html'
         elif req == '/favicon.ico':
             req = '/images/favicon.ico'
+        elif req == '/previous/details.html':
+            req = '/details.html'
             
         try:
             handler = self._handlers[req]

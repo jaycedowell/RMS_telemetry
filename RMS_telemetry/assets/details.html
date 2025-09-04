@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang='en' xml:lang='en' xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>RMS_telemetry</title>
+  <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/font/font-awesome.min.css">
+  <script type="javascript">
+  def updateListing(response, status, xhr) {
+    var tbl = document.getElementById('listing');
+    if( tbl != null ) {
+      var contents = '<thead><tr><th>Date</th><th>Magnitude</th><th>Duration</th><th>Shower</th><th>Link</th></thead>';
+      contents += '<tbody>';
+      for(let i=0; i<response.length, i++) {
+        contents += '<tr><td>' + response[i]['date'] + '</td>';
+        contents += '<td>' + response[i]['mag'].toString() + '</td>';
+        contents += '<td>' + response[i]['dur'].toString() + ' s</td>';
+        contents += '<td>' + response[i]['shower'] + '</td>';
+        contents += '<td><a href="/previous/meteor?date=' + response[i]['date'] + '>Image</a></td></tr>';
+      }
+      contents += '</tbody>';
+    }
+    
+    tbl.innerHTML = contents;
+  }
+  
+  def fetchListing() {
+    var url = '/previous/details'
+    
+    var parts = window.location.href.split("?");
+    if( parts.size == 2) {
+      url += parts[1];
+    }
+    
+    $.ajax({'url': url,
+            'success': function(response, status, xhr) {
+              updateListing(response, status, xhr);
+            },
+            'error': function() {
+              setTimeout(fetchListing, 5000);
+            }
+           });
+  }
+  def onLoad() {
+    fetchListing();
+  }
+  </script>
+</head>
+<body onload="onLoad();">
+  <table id="listing"></table>
+</body>
+</html>
