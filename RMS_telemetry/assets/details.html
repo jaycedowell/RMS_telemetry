@@ -5,18 +5,20 @@
   <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/font/font-awesome.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.3.3/css/dataTables.dataTables.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/2.3.3/js/dataTables.min.js"></script>
   <script type="text/javascript">
   function updateListing(response, status, xhr) {
     var tbl = document.getElementById('listing');
     if( tbl != null ) {
-      var contents = '<thead><tr><th>Date</th><th>Magnitude</th><th>Duration</th><th>Shower</th><th>Link</th></thead>';
+      var contents = '<thead><tr><th>Date/Time</th><th>Magnitude</th><th>Duration</th><th>Shower</th><th>Link</th></thead>';
       contents += '<tbody>';
       for(var idx in response) {
         var entry = response[idx];
-        contents += '<tr><td>' + entry['date'] + '</td>';
-        contents += '<td>' + entry['mag'].toString() + '</td>';
-        contents += '<td>' + entry['dur'].toString() + ' s</td>';
+        contents += '<tr><td>' + entry['date'].slice(0, -3) + '</td>';
+        contents += '<td>' + entry['mag'].toFixed(2) + '</td>';
+        contents += '<td>' + entry['dur'].toFixed(3) + ' s</td>';
         contents += '<td>' + entry['shower'] + '</td>';
         contents += '<td><a href="/previous/meteor?date=' + entry['date'] + '">Image</a> | <a href="/previous/meteor?date=' + entry['date'] + '&format=mp4">Movie</a></td></tr>';
       }
@@ -37,6 +39,12 @@
     $.ajax({'url': url,
             'success': function(response, status, xhr) {
               updateListing(response, status, xhr);
+              $('#listing').DataTable({'order': [[0, 'asc']],
+                                       'columnDefs': [{'targets': 4, 'orderable': false},
+                                                      {'className': 'dt-center', 'targets': [1, 2]}
+                                                     ],
+                                       'pageLength': 50
+                                      });
             },
             'error': function() {
               setTimeout(fetchListing, 5000);
@@ -47,7 +55,6 @@
 </head>
 <body onload="fetchListing();">
   <h2>Meteor Details</h2>
-  <br/>
-  <table id="listing"></table>
+  <table id="listing" class="display"></table>
 </body>
 </html>
