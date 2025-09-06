@@ -124,22 +124,22 @@ def fits_to_image(filename: str) -> Optional[str]:
         try:
             pngname = filename.replace('.fits', '.png')
             if not os.path.exists(pngname):
-                fits = astrofits.open(filename)
-                maxpix = fits[1].data
-                
-                vmin = np.percentile(maxpix.ravel(), 1)
-                vmax = np.percentile(maxpix.ravel(), 99.5)
-                
-                fig = plt.figure()
-                ax = fig.gca()
-                ax.clear()
-                ax.imshow(maxpix, vmin=vmin, vmax=vmax, cmap='gray')
-                ax.axis('off')
-                plt.draw()
-                fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-                plt.savefig(pngname, bbox_inches='tight')
-                
-                del fig
+                with astrofits.open(filename) as fits:
+                    maxpix = fits[1].data
+                    
+                    vmin = np.percentile(maxpix.ravel(), 1)
+                    vmax = np.percentile(maxpix.ravel(), 99.5)
+                    
+                    fig = plt.figure()
+                    ax = fig.gca()
+                    ax.clear()
+                    ax.imshow(maxpix, vmin=vmin, vmax=vmax, cmap='gray')
+                    ax.axis('off')
+                    plt.draw()
+                    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+                    plt.savefig(pngname, bbox_inches='tight')
+                    
+                    del fig
                 
         except Exception as e:
             print(f"WARNING: failed to convert FITS file to image: {str(e)}")
@@ -168,33 +168,33 @@ def fits_to_movie(filename: str, persist: bool=False) -> Optional[str]:
         try:
             mp4name = filename.replace('.fits', '.mp4')
             if not os.path.exists(mp4name):
-                fits = astrofits.open(filename)
-                nframe = fits[0].header['NFRAMES']
-                maxpix = fits[1].data
-                maxfrm = fits[2].data
-                avgpix = fits[3].data
-                stdpix = fits[4].data
-                
-                vmin = np.percentile(maxpix.ravel(), 1)
-                vmax = np.percentile(maxpix.ravel(), 99.5)
-                
-                fig = plt.figure()
-                ax = fig.gca()
-                for i in range(nframe):
-                    if persist:
-                        frame = np.where(maxfrm <= i, maxpix, avgpix)
-                    else:
-                        frame = np.where(maxfrm == i, maxpix, avgpix)
-                    try:
-                        im.set_array(frame)
-                    except NameError:
-                        im = ax.imshow(frame, vmin=vmin, vmax=vmax, cmap='gray')
-                        ax.axis('off')
-                        fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-                    plt.savefig(os.path.join(tempdir, f"frame_{i:03d}.png"), bbox_inches='tight')
+                with astrofits.open(filename) as fits:
+                    nframe = fits[0].header['NFRAMES']
+                    maxpix = fits[1].data
+                    maxfrm = fits[2].data
+                    avgpix = fits[3].data
+                    stdpix = fits[4].data
                     
-                del fig
-                
+                    vmin = np.percentile(maxpix.ravel(), 1)
+                    vmax = np.percentile(maxpix.ravel(), 99.5)
+                    
+                    fig = plt.figure()
+                    ax = fig.gca()
+                    for i in range(nframe):
+                        if persist:
+                            frame = np.where(maxfrm <= i, maxpix, avgpix)
+                        else:
+                            frame = np.where(maxfrm == i, maxpix, avgpix)
+                        try:
+                            im.set_array(frame)
+                        except NameError:
+                            im = ax.imshow(frame, vmin=vmin, vmax=vmax, cmap='gray')
+                            ax.axis('off')
+                            fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+                        plt.savefig(os.path.join(tempdir, f"frame_{i:03d}.png"), bbox_inches='tight')
+                        
+                    del fig
+                    
                 subprocess.check_call(['ffmpeg', '-i', os.path.join(tempdir, 'frame_%003d.png'),
                                        '-framerate', '25', '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
                                        mp4name])
