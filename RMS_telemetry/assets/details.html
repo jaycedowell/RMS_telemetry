@@ -24,8 +24,9 @@
     if( tbl != null ) {
       var contents = '<thead><tr><th>Date/Time</th><th>Magnitude</th><th>Duration</th><th>Shower</th><th>Link</th></thead>';
       contents += '<tbody>';
+        
       for(var idx in response['meteors']) {
-        var entry = response[idx];
+        var entry = response['meteors'][idx];
         contents += '<tr><td>' + entry['date'].slice(0, -3) + '</td>';
         contents += '<td>' + entry['mag'].toFixed(2) + '</td>';
         contents += '<td>' + entry['dur'].toFixed(3) + ' s</td>';
