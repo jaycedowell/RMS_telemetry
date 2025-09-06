@@ -12,7 +12,7 @@ import time
 
 from RMS.Logger import getLogger
 
-from RMS_telemetry.images import fits_to_movie
+from RMS_telemetry.images import fits_to_image, fits_to_movie
 
 
 log = getLogger("logger")
@@ -20,6 +20,15 @@ log = getLogger("logger")
 def rmsExternal(captured_night_dir, archived_night_dir, config):
     fits_list = os.path.join(archived_night_dir, 'FF_*.fits')
     for fitsname in fits_list:
+        t0 = time.time()
+        success = fits_to_image(fitsname)
+        t1 = time.time()
+        
+        if success is not None:
+            log.debug(f"Converted {os.path.basename(fitsname)} to png in {t1-t0:.1f} s")
+        else:
+            log.warning(f"Failed to convert {os.path.basename(fitsname)} to png")
+            
         t0 = time.time()
         success = fits_to_movie(fitsname)
         t1 = time.time()

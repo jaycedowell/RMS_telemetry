@@ -11,7 +11,7 @@ from socketserver import BaseRequestHandler
 from urllib.parse import unquote_plus
 
 from .static import get_asset, get_asset_data
-from .images import get_radiants, get_stack, get_image, get_image_data, get_fits_data, fits_to_movie
+from .images import get_radiants, get_stack, get_image, get_image_data
 from .data import get_meteor_details, get_meteor_fits_file
 from .utils import timestamp_to_iso, iso_to_timestamp, timestamp_to_rfc2822, get_archive_dir
 from .system import *
@@ -537,15 +537,13 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             raise URLNotFoundError()
         if format not in ('png', 'mp4'):
             raise ValueError()
+        format = '.' + format
             
         filename = get_meteor_fits_file(self.server.log_dir, date)
         if filename is None:
             raise URLNotFoundError()
             
-        if format == 'mp4':
-            data = get_image_data(filename.replace('.fits', '.mp4'))
-        else:
-            data = get_fits_data(filename)
+        data = get_image_data(filename.replace('.fits', format))
         if data is None:
             raise URLNotFoundError()
             
