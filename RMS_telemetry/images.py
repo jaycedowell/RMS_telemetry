@@ -139,7 +139,7 @@ def fits_to_image(filename: str) -> Optional[str]:
                 fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
                 plt.savefig(pngname, bbox_inches='tight')
                 
-                def fig
+                del fig
                 
         except Exception as e:
             print(f"WARNING: failed to convert FITS file to image: {str(e)}")
