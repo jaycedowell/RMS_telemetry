@@ -139,7 +139,7 @@ def fits_to_image(filename: str) -> Optional[str]:
                     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
                     plt.savefig(pngname, bbox_inches='tight')
                     
-                    del fig
+                    plt.close(fig)
                 
         except Exception as e:
             print(f"WARNING: failed to convert FITS file to image: {str(e)}")
@@ -193,7 +193,7 @@ def fits_to_movie(filename: str, persist: bool=False) -> Optional[str]:
                             fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
                         plt.savefig(os.path.join(tempdir, f"frame_{i:03d}.png"), bbox_inches='tight')
                         
-                    del fig
+                    plt.close(fig)
                     
                 subprocess.check_call(['ffmpeg', '-i', os.path.join(tempdir, 'frame_%003d.png'),
                                        '-framerate', '25', '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
