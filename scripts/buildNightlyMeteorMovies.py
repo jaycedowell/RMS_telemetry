@@ -29,11 +29,11 @@ def rmsExternal(captured_night_dir, archived_night_dir, config):
         else:
             log.warning(f"Failed to convert {os.path.basename(fitsname)} to png")
             
-        t0 = time.time()
-        success = fits_to_movie(fitsname)
-        t1 = time.time()
-        
-        if success is not None:
-            log.debug(f"Converted {os.path.basename(fitsname)} to mp4 in {t1-t0:.1f} s")
-        else:
-            log.warning(f"Failed to convert {os.path.basename(fitsname)} to mp4")
+        # t0 = time.time()
+        # success = fits_to_movie(fitsname)
+        # t1 = time.time()
+        # 
+        # if success is not None:
+        #     log.debug(f"Converted {os.path.basename(fitsname)} to mp4 in {t1-t0:.1f} s")
+        # else:
+        #     log.warning(f"Failed to convert {os.path.basename(fitsname)} to mp4")
