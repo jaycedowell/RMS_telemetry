@@ -127,13 +127,12 @@ def fits_to_image(filename: str) -> Optional[str]:
                 with astrofits.open(filename) as fits:
                     maxpix = fits[1].data
                     
-                    vmin = np.percentile(maxpix.ravel(), 1)
                     vmax = np.percentile(maxpix.ravel(), 99.5)
                     
                     fig = plt.figure()
                     ax = fig.gca()
                     ax.clear()
-                    ax.imshow(maxpix, vmin=vmin, vmax=vmax, cmap='gray')
+                    ax.imshow(maxpix, vmax=vmax, cmap='gray')
                     ax.axis('off')
                     plt.draw()
                     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
@@ -175,7 +174,6 @@ def fits_to_movie(filename: str, persist: bool=False) -> Optional[str]:
                     avgpix = fits[3].data
                     stdpix = fits[4].data
                     
-                    vmin = np.percentile(maxpix.ravel(), 1)
                     vmax = np.percentile(maxpix.ravel(), 99.5)
                     
                     fig = plt.figure()
@@ -188,7 +186,7 @@ def fits_to_movie(filename: str, persist: bool=False) -> Optional[str]:
                         try:
                             im.set_array(frame)
                         except NameError:
-                            im = ax.imshow(frame, vmin=vmin, vmax=vmax, cmap='gray')
+                            im = ax.imshow(frame, vmax=vmax, cmap='gray')
                             ax.axis('off')
                             fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
                         plt.savefig(os.path.join(tempdir, f"frame_{i:03d}.png"), bbox_inches='tight')
