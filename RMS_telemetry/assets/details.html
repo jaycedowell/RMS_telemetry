@@ -10,11 +10,21 @@
   <script src="https://cdn.datatables.net/2.3.3/js/dataTables.min.js"></script>
   <script type="text/javascript">
   function updateListing(response, status, xhr) {
+    if( document.title === 'RMS_telemetry' ) {
+      document.title = response['station_id'];
+    }
+    
+    var sp = document.getElementById('date');
+    if( sp != null ) {
+      sp.innerHTML = response['capture_started'].slice(0, 10);
+      sp.classList.remove("loading");
+    }
+    
     var tbl = document.getElementById('listing');
     if( tbl != null ) {
       var contents = '<thead><tr><th>Date/Time</th><th>Magnitude</th><th>Duration</th><th>Shower</th><th>Link</th></thead>';
       contents += '<tbody>';
-      for(var idx in response) {
+      for(var idx in response['meteors']) {
         var entry = response[idx];
         contents += '<tr><td>' + entry['date'].slice(0, -3) + '</td>';
         contents += '<td>' + entry['mag'].toFixed(2) + '</td>';
@@ -54,7 +64,7 @@
   </script>
 </head>
 <body onload="fetchListing();">
-  <h2>Meteor Details</h2>
+  <h2>Meteor Details for <span id="date" class="loading">Loading...</span></h2>
   <table id="listing" class="display"></table>
 </body>
 </html>

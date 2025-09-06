@@ -501,11 +501,20 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         if data is None:
             raise URLNotFoundError()
             
-        date = data['capture']['started'][:10].replace('-', '')
+        station_id = data['station_id']
+        started = data['capture']['started']
+        date = started[:10].replace('-', '')
+        n_meteor_final = data['detections']['n_meteor_final']
         data = get_meteor_details(self.server.log_dir, date=date)
         if data is None:
             raise URLNotFoundError()
             
+        data = {'station_id': station_id,
+                'capture_started': started,
+                'n_meteor_final': n_meteor_final,
+                'meteors': data
+               }
+        
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Last-Modified', mtime)
