@@ -183,11 +183,12 @@ def fits_to_movie(filename: str, persist: bool=False) -> Optional[str]:
                         frame = np.where(maxfrm <= i, maxpix, avgpix)
                     else:
                         frame = np.where(maxfrm == i, maxpix, avgpix)
-                    ax.clear()
-                    ax.imshow(frame, cmap='gray')
-                    ax.axis('off')
-                    plt.draw()
-                    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+                    try:
+                        im.set_array(frame)
+                    except NameError:
+                        im = ax.imshow(frame, vmin=vmin, vmax=vmax, cmap='gray')
+                        ax.axis('off')
+                        fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
                     plt.savefig(os.path.join(tempdir, f"frame_{i:03d}.png"), bbox_inches='tight')
                     
                 subprocess.check_call(['ffmpeg', '-i', os.path.join(tempdir, 'frame_%003d.png'),
