@@ -3,10 +3,10 @@ RMS-compatible external script for converting nightly FITS files into movies for
 RMS_telemetry.
 """
 
+import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-import os
 import glob
 import time
 
