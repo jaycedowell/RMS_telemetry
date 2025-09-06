@@ -127,8 +127,8 @@ def fits_to_image(filename: str) -> Optional[str]:
                 fits = astrofits.open(filename)
                 maxpix = fits[1].data
                 
-                vmin = np.percentile(maxpix.ravel, 1)
-                vmax = np.percentile(maxpix.ravel, 99.5)
+                vmin = np.percentile(maxpix.ravel(), 1)
+                vmax = np.percentile(maxpix.ravel(), 99.5)
                 
                 fig = plt.figure()
                 ax = fig.gca()
@@ -141,7 +141,7 @@ def fits_to_image(filename: str) -> Optional[str]:
                 
         except Exception as e:
             print(f"WARNING: failed to convert FITS file to image: {str(e)}")
-            pngname = ''
+            pngname = None
             
         finally:
             shutil.rmtree(tempdir)
@@ -173,8 +173,8 @@ def fits_to_movie(filename: str, persist: bool=False) -> Optional[str]:
                 avgpix = fits[3].data
                 stdpix = fits[4].data
                 
-                vmin = np.percentile(maxpix.ravel, 1)
-                vmax = np.percentile(maxpix.ravel, 99.5)
+                vmin = np.percentile(maxpix.ravel(), 1)
+                vmax = np.percentile(maxpix.ravel(), 99.5)
                 
                 fig = plt.figure()
                 ax = fig.gca()
