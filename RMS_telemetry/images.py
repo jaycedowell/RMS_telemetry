@@ -189,8 +189,7 @@ def fits_to_movie(filename: str, persist: bool=False, tstart: Optional[str]=None
                         
                         if dur is not None:
                             dframe = duration * fps + 5
-                            dframe = min(nframe, int(round(dframe)))
-                            nframe = dframe
+                            nframe = min(nframe, int(round(dframe)))
                             
                     fig = plt.figure()
                     ax = fig.gca()
