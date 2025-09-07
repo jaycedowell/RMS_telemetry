@@ -5,6 +5,7 @@ import shutil
 import tempfile
 import mimetypes
 import subprocess
+from datetime import datetime, timedelta
 
 from astropy.io import fits as astrofits
 
@@ -148,7 +149,8 @@ def fits_to_image(filename: str) -> Optional[str]:
     return pngname
 
 
-def fits_to_movie(filename: str, persist: bool=False) -> Optional[str]:
+def fits_to_movie(filename: str, persist: bool=False, tstart: Optional[str]=None,
+                  duration: Optional[float]=None) -> Optional[str]:
     """
     Given the name of a FITS file, convert it into a movie and return the
     filename of that movie.  If the FITS file does not exist or the movie
@@ -156,6 +158,11 @@ def fits_to_movie(filename: str, persist: bool=False) -> Optional[str]:
     
     .. note:: The `persist` keyword changes the movie style to max hold so that
               the meteor trail persists until the end of the video.
+              
+    .. note:: By default this function converts all frames in the FITS file into
+              a movie.  To only convert a portion of the file use the `tstart`
+              and `duration` keywords to provide a ISO8601 formated start time
+              and a duration in seconds to convert.
     """
     
     mp4name = None
@@ -166,15 +173,28 @@ def fits_to_movie(filename: str, persist: bool=False) -> Optional[str]:
             mp4name = filename.replace('.fits', '.mp4')
             if not os.path.exists(mp4name):
                 with astrofits.open(filename) as fits:
+                    frame0 = 0
                     nframe = fits[0].header['NFRAMES']
+                    fps = fits[0].header['FPS']
                     maxpix = fits[1].data
                     maxfrm = fits[2].data
                     avgpix = fits[3].data
                     stdpix = fits[4].data
                     
+                    if tstart is not None:
+                        fitstime = datetime.fromisoformat(fits[0].header['DATE-OBS'])
+                        eventime = datetime.fromisoformat(tstart)
+                        frame0 = (eventtime - fitstime).total_seconds() * fps - 2.5
+                        frame0 = max(0, int(round(frame0)))
+                        
+                        if dur is not None:
+                            dframe = duration * fps + 5
+                            dframe = min(nframe, int(round(dframe)))
+                            nframe = dframe
+                            
                     fig = plt.figure()
                     ax = fig.gca()
-                    for i in range(nframe):
+                    for i in range(frame0, nframe):
                         if persist:
                             frame = np.where(maxfrm <= i, maxpix, avgpix)
                         else:
@@ -185,12 +205,12 @@ def fits_to_movie(filename: str, persist: bool=False) -> Optional[str]:
                             im = ax.imshow(frame, cmap='gray')
                             ax.axis('off')
                             fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-                        plt.savefig(os.path.join(tempdir, f"frame_{i:03d}.png"), bbox_inches='tight')
+                        plt.savefig(os.path.join(tempdir, f"frame_{i-frame0:03d}.png"), bbox_inches='tight')
                         
                     plt.close(fig)
                     
                 subprocess.check_call(['ffmpeg', '-i', os.path.join(tempdir, 'frame_%003d.png'),
-                                       '-framerate', '25', '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
+                                       '-framerate', str(int(round(fps))), '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
                                        mp4name])
                 
         except Exception as e:
