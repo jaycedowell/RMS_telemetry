@@ -11,7 +11,7 @@ from socketserver import BaseRequestHandler
 from urllib.parse import unquote_plus
 
 from .static import get_asset, get_asset_data
-from .images import get_radiants, get_stack, get_image, get_image_data
+from .images import get_radiants, get_stack, get_image, get_image_data, fits_to_movie
 from .data import get_meteor_details, get_meteor_fits_file
 from .utils import timestamp_to_iso, iso_to_timestamp, timestamp_to_rfc2822, get_archive_dir
 from .system import *
@@ -527,9 +527,12 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
     @HandlerRegistry.register('/previous/meteor')
     def get_previous_meteor(self, params: Dict[str,Any]):
         date = None
+        duration = None
         format = 'png'
         if 'date' in params:
             date = str(params['date'])
+        if 'duration' in params:
+            duration = float(params['duration'])
         if 'format' in params:
             format = str(params['format'])
             
@@ -543,7 +546,9 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
         if filename is None:
             raise URLNotFoundError()
             
-        data = get_image_data(filename.replace('.fits', format))
+        if format == '.mp4':
+            filename = fits_to_movie(filename, tstart=date, duration=duration)
+            data = get_image_data(filename.replace('.fits', format))
         if data is None:
             raise URLNotFoundError()
             
