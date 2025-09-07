@@ -548,7 +548,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
             
         if format == '.mp4':
             filename = fits_to_movie(filename, tstart=date, duration=duration)
-            data = get_image_data(filename.replace('.fits', format))
+        data = get_image_data(filename.replace('.fits', format))
         if data is None:
             raise URLNotFoundError()
             
