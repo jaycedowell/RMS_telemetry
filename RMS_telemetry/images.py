@@ -187,7 +187,7 @@ def fits_to_movie(filename: str, persist: bool=False, tstart: Optional[str]=None
                         frame0 = (eventtime - fitstime).total_seconds() * fps - 2.5
                         frame0 = max(0, int(round(frame0)))
                         
-                        if dur is not None:
+                        if duration is not None:
                             dframe = duration * fps + 5
                             nframe = min(nframe, int(round(dframe)))
                             
