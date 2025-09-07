@@ -193,7 +193,7 @@ def fits_to_movie(filename: str, persist: bool=False, tstart: Optional[str]=None
                             
                     fig = plt.figure()
                     ax = fig.gca()
-                    for i in range(frame0, nframe):
+                    for i in range(frame0, frame0+nframe):
                         if persist:
                             frame = np.where(maxfrm <= i, maxpix, avgpix)
                         else:
