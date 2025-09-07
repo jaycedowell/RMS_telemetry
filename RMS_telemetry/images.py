@@ -183,7 +183,7 @@ def fits_to_movie(filename: str, persist: bool=False, tstart: Optional[str]=None
                     
                     if tstart is not None:
                         fitstime = datetime.fromisoformat(fits[0].header['DATE-OBS'])
-                        eventime = datetime.fromisoformat(tstart)
+                        eventtime = datetime.fromisoformat(tstart)
                         frame0 = (eventtime - fitstime).total_seconds() * fps - 2.5
                         frame0 = max(0, int(round(frame0)))
                         
