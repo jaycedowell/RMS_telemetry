@@ -49,7 +49,7 @@ def iso_to_timestamp(iso: str) -> float:
     
     dt = iso_to_datetime(iso)
     tt = dt.timetuple()
-    return calendar.timegm(tt)
+    return calendar.timegm(tt) + dt.microsecond/1e6
 
 
 def now_as_iso() -> str:
