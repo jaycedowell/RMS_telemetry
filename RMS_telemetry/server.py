@@ -574,6 +574,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
                 self.send_response(304)
                 self.send_header('Last-Modified', mtime)
                 self.send_header('Cache-Control', 'max-age=600, must-revalidate')
+                self.send_header('Access-Control-Allow-Origin', 'https://explore.globalmeteornetwork.org/')
                 self.end_headers()
                 return
                 
@@ -585,6 +586,7 @@ class  TelemetryHandler(BaseHTTPRequestHandler):
                 self.send_header('Content-Encoding', data['content-encoding'])
             self.send_header('Last-Modified', data['last-modified'])
             self.send_header('Cache-Control', 'max-age=600, must-revalidate')
+            self.send_header('Access-Control-Allow-Origin', 'https://explore.globalmeteornetwork.org/')
             self.end_headers()
             
             self.wfile.write(data['data'])
