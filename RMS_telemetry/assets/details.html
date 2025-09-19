@@ -62,7 +62,6 @@
               updateListing(response, status, xhr);
               dtable = $('#listing').DataTable({'order': [[0, 'asc']],
                                                 'columnDefs': [{'targets': 4, 'orderable': false},
-                                                               {'targets': 5, 'sType': 'string'},
                                                                {'targets': [1, 2], 'className': 'dt-center'}
                                                               ],
                                                 'pageLength': 50
@@ -90,7 +89,8 @@
                 continue;
               } else if( diff >= -0.125 && diff <= 0.125 ) {
                 var glnk = row.cells[5];
-                glnk.innerHTML += '<a name="' + entry['meteor_unique_trajectory_identifier'] + '" href="https://explore.globalmeteornetwork.org/gmn_data_store/meteor/' + entry['meteor_unique_trajectory_identifier'] + '" target="_blank" rel="noopener noreferrer">Yes <i class="icon-external-link"></i></a>';
+                glnk.innerHTML += '<a href="https://explore.globalmeteornetwork.org/gmn_data_store/meteor/' + entry['meteor_unique_trajectory_identifier'] + '" target="_blank" rel="noopener noreferrer">Yes <i class="icon-external-link"></i></a>';
+                this.invalidate();
                 break;
               } else {
                 break;
@@ -98,6 +98,7 @@
             }
           } catch(err) {}
         });
+        dtable.draw();
     }
   }
   
