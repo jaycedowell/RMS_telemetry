@@ -25,7 +25,7 @@
     
     var tbl = document.getElementById('listing');
     if( tbl != null ) {
-      var contents = '<thead><tr><th>Date/Time</th><th>Magnitude</th><th>Duration</th><th>Shower</th><th>Link</th></thead>';
+      var contents = '<thead><tr><th>Date/Time</th><th>Magnitude</th><th>Duration</th><th>Shower</th><th>Link</th><th>GMN Entry?</th></thead>';
       contents += '<tbody>';
       
       for(var idx in response['meteors']) {
@@ -35,6 +35,7 @@
         contents += '<td>' + entry['dur'].toFixed(3) + ' s</td>';
         contents += '<td>' + entry['shower'] + '</td>';
         contents += '<td><a href="/previous/meteor?date=' + entry['date'] + '">Image</a> | <a href="/previous/meteor?date=' + entry['date'] + '&duration=' + entry['dur'].toFixed(3) + '&format=mp4">Movie</a></td></tr>';
+        contents += '<td></td>';
       }
       contents += '</tbody>';
     }
@@ -87,8 +88,8 @@
               if( diff < -0.125 ) {
                 continue;
               } else if( diff >= -0.125 && diff <= 0.125 ) {
-                var links = row.cells[4];
-                links.innerHTML += ' | <a href="https://explore.globalmeteornetwork.org/gmn_data_store/meteor/' + entry['meteor_unique_trajectory_identifier'] + '" target="_blank" rel="noopener noreferrer">GMN <i class="icon-external-link"></i></a>';
+                var glnk = row.cells[5];
+                glnk.innerHTML += '<a href="https://explore.globalmeteornetwork.org/gmn_data_store/meteor/' + entry['meteor_unique_trajectory_identifier'] + '" target="_blank" rel="noopener noreferrer">Yes <i class="icon-external-link"></i></a>';
                 break;
               } else {
                 break;
