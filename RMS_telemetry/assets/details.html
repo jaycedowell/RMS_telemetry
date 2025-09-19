@@ -62,7 +62,8 @@
               updateListing(response, status, xhr);
               dtable = $('#listing').DataTable({'order': [[0, 'asc']],
                                                 'columnDefs': [{'targets': 4, 'orderable': false},
-                                                               {'className': 'dt-center', 'targets': [1, 2]}
+                                                               {'targets': 5, 'sType': 'html'},
+                                                               {'targets': [1, 2], 'className': 'dt-center'}
                                                               ],
                                                 'pageLength': 50
                                                });
