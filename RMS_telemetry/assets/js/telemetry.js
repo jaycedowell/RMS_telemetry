@@ -177,7 +177,7 @@ function fetchHistory() {
          });
 }
 
-const zhr_flux_re = /in the next 24 hrs<tspan x="\d+(\.\d+)?" dy="1em"><\/tspan><tspan x="\d+(\.\d+)?" dy="1em"><\/tspan><\/tspan>(?<zhr>\d+)<tspan x="\d+(\.\d+)?" dy="1em"><\/tspan><tspan>meteors\/hr/;
+const zhr_flux_re = /in the next 24 hrs<tspan x="\d+(\.\d+)?" dy="1em">​<\/tspan><tspan x="\d+(\.\d+)?" dy="1em">​<\/tspan><\/tspan>(?<zhr>\d+)<tspan x="\d+(\.\d+)?" dy="1em">​<\/tspan><tspan>meteors\/hr/;
 const zhr_updated_re = new RegExp(/<p><b>Last update:\s*<\/b>.*<br>(?<date>\d+-\d+-\d+ \d+:\d+:\d+ UTC).*<br>Solar longitude (?<long>\d+(\.\d+)?) deg/, 'ms');
     
 function updateZHR(response, status, xhr) {
