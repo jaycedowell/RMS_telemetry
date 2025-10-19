@@ -177,6 +177,43 @@ function fetchHistory() {
          });
 }
 
+const zhr_flux_re = /in the next 24 hrs<tspan x="\d+(\.\d+)?" dy="1em">​<\/tspan><tspan x="\d+(\.\d+)?" dy="1em">​<\/tspan><\/tspan>(?<zhr>\d+)<tspan x="\d+\.\d+" dy="1em">​<\/tspan><tspan>meteors\/hr/;
+const zhr_updated_re = new RegExp(/<p><b>Last update:\s*<\/b>.*<br>(?<date>\d+-\d+-\d+ \d+:\d+:\d+ UTC).*<br>Solar longitude (?<long>\d+(\.\d+)?) deg/, 'ms');
+    
+function updateZHR(response, status, xhr) {
+  var sp = document.getElementById('zhr_rate');
+  if( sp != null ) {
+    var mtch1 = response.match(zhr_flux_re);
+    var mtch2 = response.match(zhr_updated_re);
+    if( mtch1 != null && mtch2 != null ) {
+      sp.innerHTML = mtch1.groups['zhr'] + 'meteros/hr';
+      sp.classList.remove('loading');
+      
+      sp = document.getElementById('zhr_updated');
+      if( sp != null ) {
+        sp.innerHTML = mtch2.groups('date');
+        sp.classList.remove('loading');
+      }
+    }
+  }
+}
+
+function fetchZHR() {
+  if( document.title !== 'RMS_telemetry' ) {
+    $.ajax({'url': "https://globalmeteornetwork.org/flux/",
+            'success': function(response, status, xhr) {
+              updateZHR(response, status, xhr);
+              setTimeout(fetchZHR, 4*3600*1000);
+            },
+            'error': function() {
+              setTimeout(fetchZHR, 1*3600*1000);
+            }
+           });
+  } else {
+    setTimeout(fetchZHR, 5*1000);
+  }
+}
+
 function updateMonthlyCount(response, status, xhr) {
   var sp = document.getElementById('monthly_count');
   if( sp != null && response.ok ) {
@@ -211,5 +248,6 @@ function initializePage() {
   fetchLatest();
   fetchPrevious();
   fetchHistory();
+  fetchZHR();
   fetchMonthlyCount();
 }
